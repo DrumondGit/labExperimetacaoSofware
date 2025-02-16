@@ -1,7 +1,7 @@
 import os
 import venv
 
-venv_dir = "venv"
+venv_dir = ".venv"
 
 # Criar ambiente virtual, se não existir
 if not os.path.exists(venv_dir):
