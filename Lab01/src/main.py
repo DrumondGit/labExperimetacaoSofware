@@ -1,10 +1,10 @@
-import requests
-import os
-import pandas as pd
-import matplotlib.pyplot as plt
-from dotenv import load_dotenv
-import time
 import json
+import os
+import time
+
+import pandas as pd
+import requests
+from dotenv import load_dotenv
 
 load_dotenv()
 token = os.getenv("GITHUB_TOKEN")
@@ -74,7 +74,7 @@ def fetchRepositories():
                 cursor = pageInfo["endCursor"] if pageInfo["hasNextPage"] else None
 
                 print(f"✅ Chamada {batch + 1}/{numBatches} concluída com sucesso! ({len(allRepos)}/{totalRepos} repositórios coletados)\n")
-                break 
+                break
 
             else:
                 print(f"⚠️ Erro {response.status_code}: {response.text}. Tentativa {attempt + 1}/3...")
@@ -102,6 +102,12 @@ def processData(repositories):
 
     return pd.DataFrame(repoList)
 
+def csv_writer(data, filename):
+    dataframe = pd.DataFrame(data)
+
+    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+        csvfile.write(dataframe.to_string(index=False))
+
 # Run
 repositories = fetchRepositories()
 if repositories:
@@ -109,4 +115,5 @@ if repositories:
     if df is not None:
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_columns', None)
+        csv_writer(df.to_dict('records'), 'repos.csv')
         print(df.to_string())
