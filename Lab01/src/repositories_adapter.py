@@ -1,7 +1,7 @@
 import json
 import os
 import time
-
+import matplotlib.pyplot as plt
 import pandas as pd
 import requests
 from dotenv import load_dotenv
@@ -24,7 +24,7 @@ def fetchRepositories():
     """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
     allRepos = []
     cursor = None
-    totalRepos = 1000  # Número total de repositórios desejado
+    totalRepos = 25  # Número total de repositórios desejado
     batchSize = 25  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
@@ -104,3 +104,40 @@ def processData(repositories):
         })
 
     return pd.DataFrame(repoList)
+
+def plotGraphs(df):
+    """Gera gráficos com base nos dados coletados."""
+    if df is None or df.empty:
+        print("⚠️ Sem dados suficientes para gerar gráficos.")
+        return
+
+    plt.rcParams.update({'font.size': 10})
+
+    # Gráfico de barras: Estrelas por repositório
+    plt.figure(figsize=(12, 6))
+    dfSorted = df.sort_values(by="Estrelas", ascending=False)
+    plt.barh(dfSorted["Nome"], dfSorted["Estrelas"], color="skyblue")
+    plt.xlabel("Número de Estrelas")
+    plt.ylabel("Repositório")
+    plt.title("Top 10 Repositórios por Número de Estrelas")
+    plt.gca().invert_yaxis()
+    plt.tight_layout()
+    plt.show()
+
+    # Gráfico de pizza: Linguagens mais usadas
+    languageCounts = df["Linguagem Principal"].value_counts()
+    plt.figure(figsize=(8, 8))
+    languageCounts.plot(kind="pie", autopct="%1.1f%%", startangle=140, cmap="Set3")
+    plt.title("Distribuição das Linguagens de Programação")
+    plt.ylabel("")
+    plt.tight_layout()
+    plt.show()
+
+    # Gráfico de dispersão: PRs x Issues
+    plt.figure(figsize=(8, 6))
+    plt.scatter(df["Pull Requests Aceitos"], df["Total de Issues"], color="orange", alpha=0.7)
+    plt.xlabel("Pull Requests Aceitos")
+    plt.ylabel("Total de Issues")
+    plt.title("Pull Requests Aceitos vs Total de Issues")
+    plt.tight_layout()
+    plt.show()

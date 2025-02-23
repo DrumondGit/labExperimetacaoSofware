@@ -21,6 +21,9 @@ if repositories:
         print(media)
         print("\n==================== Mediana ====================\n")
         print(mediana)
+        repositories_adapter.plotGraphs(df)
+
+
 
 
 
