@@ -1,5 +1,9 @@
 # labExperimetacaoSofware
 
+## Relatório final do projeto
+
+[Veja a documentação](/Lab01/docs)
+
 ## Configurar o ambiente
 
 1. Crie um ambiente virtual usando o seguinte comando:
