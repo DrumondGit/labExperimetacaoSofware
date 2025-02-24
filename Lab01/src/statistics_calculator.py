@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pandas as pd
 
 
@@ -26,3 +28,17 @@ def calculate_mode(data):
         mode = values.mode()
         mode_values[0][key] = mode.tolist()
     return pd.DataFrame(mode_values)
+
+
+def calculate_repositories_middle_age(data):
+    repos_age = []
+    data_values = data.values
+
+    for value in data_values:
+        criation_date = pd.to_datetime(value[0])
+        age = datetime.now(timezone.utc) - criation_date
+        repos_age.append(age.days)
+
+    series_value = pd.Series(repos_age)
+    middle_age = series_value.mean() / 365.25
+    return round(float(middle_age), 1)
