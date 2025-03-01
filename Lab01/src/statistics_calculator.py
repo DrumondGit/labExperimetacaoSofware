@@ -62,3 +62,14 @@ def calculate_repositories_middle_age(data):
     series_value = pd.Series(repos_age)
     middle_age = series_value.mean() / 365.25
     return round(float(middle_age), 1)
+
+def get_popular_languages(data):
+    data_values = data.values
+    ignored_values = ['Desconhecido', 'Markdown']
+
+    languages = [item[0] for item in data_values]
+    languages_series = pd.Series(languages)
+    filtered_languages = languages_series[~languages_series.isin(ignored_values)]
+    languages_by_popularity = filtered_languages.value_counts()
+
+    return pd.DataFrame(languages_by_popularity)
