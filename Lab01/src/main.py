@@ -8,7 +8,7 @@ import statistics_calculator
 repositories = repositories_adapter.fetchRepositories()
 if repositories:
     df = repositories_adapter.processData(repositories)
-    STATISTICS_CALCULATOR_VALUES = df[['Estrelas', 'Releases', 'Pull Requests Aceitos', 'Total de Issues']]
+    STATISTICS_CALCULATOR_VALUES = df[['Estrelas', 'Releases', 'Pull Requests Aceitos', 'Total de Issues Abertas', 'Total de Issues Fechadas']]
     REPOS_LAST_UPDATE_VALUES = df[['Última Atualização']]
     REPOSITORIES_CREATION_DATE = df[['Data de Criação']]
 

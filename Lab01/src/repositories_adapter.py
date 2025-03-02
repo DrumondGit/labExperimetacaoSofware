@@ -45,7 +45,8 @@ def fetchRepositories():
                   primaryLanguage {{ name }}
                   pullRequests(states: MERGED) {{ totalCount }}
                   releases {{ totalCount }}
-                  issues {{ totalCount }}
+                  openIssues: issues(states:OPEN) {{ totalCount }}
+                  closedIssues: issues(states:CLOSED) {{ totalCount }}
                 }}
               }}
             }}
@@ -99,7 +100,8 @@ def processData(repositories):
             "Estrelas": node['stargazerCount'],
             "Pull Requests Aceitos": node['pullRequests']['totalCount'],
             "Releases": node['releases']['totalCount'],
-            "Total de Issues": node['issues']['totalCount'],
+            "Total de Issues Abertas": node['openIssues']['totalCount'],
+            "Total de Issues Fechadas": node['closedIssues']['totalCount'],
             "Linguagem Principal": node['primaryLanguage']['name'] if node['primaryLanguage'] else "Desconhecido"
         })
 
@@ -133,11 +135,12 @@ def plotGraphs(df):
     plt.tight_layout()
     plt.show()
 
-    # Gráfico de dispersão: PRs x Issues
+    # Gráfico de dispersão: PRs x Issues Fechadas
     plt.figure(figsize=(8, 6))
-    plt.scatter(df["Pull Requests Aceitos"], df["Total de Issues"], color="orange", alpha=0.7)
+    plt.scatter(df["Pull Requests Aceitos"], df["Total de Issues Fechadas"], color="orange", alpha=0.7)
     plt.xlabel("Pull Requests Aceitos")
-    plt.ylabel("Total de Issues")
-    plt.title("Pull Requests Aceitos vs Total de Issues")
+    plt.ylabel("Total de Issues Fechadas")
+    plt.title("Pull Requests Aceitos vs Total de Issues Fechadas")
     plt.tight_layout()
     plt.show()
+
