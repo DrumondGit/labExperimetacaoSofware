@@ -9,7 +9,7 @@
 1. Crie um ambiente virtual usando o seguinte comando:
 
     ```bash
-    pip install pandas file-adapter repositories-adapter statistics-calculator json5 requests python-dotenv matplotlib
+    python -m venv venv
     ```
 
 2. Ative o ambiente virtual:
@@ -31,7 +31,7 @@
 De o seguinte comando:
 
 ```bash
-pip install
+pip install pandas file-adapter repositories-adapter statistics-calculator json5 requests python-dotenv matplotlib
 ```
 Ou esse (so funciona se rodar o comando de run no terminal):
 
