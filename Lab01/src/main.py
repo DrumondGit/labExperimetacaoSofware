@@ -20,7 +20,9 @@ if repositories:
         mediana = statistics_calculator.calculate_median(STATISTICS_CALCULATOR_VALUES)
         moda = statistics_calculator.calculate_mode(STATISTICS_CALCULATOR_VALUES)
         repositories_middle_age = statistics_calculator.calculate_repositories_middle_age(REPOSITORIES_CREATION_DATE)
+        repositories_median_age = statistics_calculator.calculate_repositories_median_age(REPOSITORIES_CREATION_DATE)
         repos_last_update_statistics = statistics_calculator.calculate_last_update_statistics(REPOS_LAST_UPDATE_VALUES)
+        
         print(df.to_string())
         print("\n==================== MÉDIA ====================\n")
         print(media)
@@ -28,9 +30,14 @@ if repositories:
         print(mediana)
         print("\n==================== IDADE MÉDIA REPOS ====================\n")
         print(f"{repositories_middle_age} anos")
+        print(f"{repositories_median_age} anos")
+        print
         print("\n==================== ÚLTIMA ATUALIZAÇÃO ====================\n")
         print(repos_last_update_statistics)
         repositories_adapter.plotGraphs(df)
+        repositories_adapter.printLanguageStats(df)
+        repositories_adapter.plot_top_languages(df)
+
 
 
 

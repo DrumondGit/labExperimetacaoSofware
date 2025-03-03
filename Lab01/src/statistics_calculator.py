@@ -62,3 +62,17 @@ def calculate_repositories_middle_age(data):
     series_value = pd.Series(repos_age)
     middle_age = series_value.mean() / 365.25
     return round(float(middle_age), 1)
+
+def calculate_repositories_median_age(data):
+    repos_age = []
+    data_values = data.values
+
+    for value in data_values:
+        creation_date = pd.to_datetime(value[0])
+        age = datetime.now(timezone.utc) - creation_date
+        repos_age.append(age.days)
+
+    series_value = pd.Series(repos_age)
+    median_age = series_value.median() / 365.25
+    return round(float(median_age), 1)
+
