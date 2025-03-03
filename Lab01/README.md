@@ -9,7 +9,7 @@
 1. Crie um ambiente virtual usando o seguinte comando:
 
     ```bash
-    python -m venv .venv
+    pip install pandas file-adapter repositories-adapter statistics-calculator json5 requests python-dotenv matplotlib
     ```
 
 2. Ative o ambiente virtual:
@@ -27,6 +27,13 @@
       .venv\Scripts\activate
       ```
 ## Instalar dependências
+
+De o seguinte comando:
+
+```bash
+pip install
+```
+Ou esse (so funciona se rodar o comando de run no terminal):
 
 ```bash
 python install_dependencies.py
