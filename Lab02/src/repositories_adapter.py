@@ -1,14 +1,21 @@
 import json
 import os
+import shutil
+import stat
+import subprocess
 import time
+from datetime import datetime, timezone
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import requests
 from dotenv import load_dotenv
-
+from git import Repo
+from pygount import ProjectSummary, SourceAnalysis
 
 load_dotenv()
 token = os.getenv("GITHUB_TOKEN")
+github_url = os.getenv("GITHUB_URL")
 
 if not token:
     raise ValueError("Erro: O token do GitHub não foi encontrado. Verifique o arquivo .env.")
@@ -25,8 +32,8 @@ def fetchRepositories():
     """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
     allRepos = []
     cursor = None
-    totalRepos = 5  # Número total de repositórios desejado
-    batchSize = 5  # Repositórios por chamada
+    totalRepos = 2  # Número total de repositórios desejado
+    batchSize = 2  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
     for batch in range(numBatches):
@@ -90,19 +97,75 @@ def fetchRepositories():
 def processData(repositories):
     """Processa os dados da API para um DataFrame."""
     repoList = []
+    current_dir = os.path.dirname(__file__)
+
+    print("🔄 Coletando dados dos repositórios...\n")
 
     for repo in repositories:
+
         node = repo['node']
+        repo_age = calculate_repos_age(node['createdAt'])
+        repo_url = f"{github_url}/{node['owner']["login"]}/{node['name']}"
+        clone_repo(current_dir, repo_url)
+        repo_path = os.path.join("repo")
+        cloned_repo_path = os.path.join(current_dir, "repo")
+        if os.path.exists(cloned_repo_path):
+            code_lines, comment_lines = count_lines(repo_path)
+            remove_repo(cloned_repo_path)
+
         repoList.append({
             "Nome": node['name'],
             "Proprietário": node['owner']['login'],
+            "Idade": f"{repo_age} anos",
             "Estrelas": node['stargazerCount'],
             "Pull Requests Aceitos": node['pullRequests']['totalCount'],
             "Releases": node['releases']['totalCount'],
+            "Linhas de código": code_lines,
+            "Linhas de comentário": comment_lines
         })
 
     return pd.DataFrame(repoList)
 
+def calculate_repos_age(creation_date):
+    repo_age_timezone = datetime.now(timezone.utc) - pd.to_datetime(creation_date)
+    repo_age = repo_age_timezone.days / 325.25
+    return round(float(repo_age), 1)
+
+def clone_repo(current_dir, repo_url):
+    clone_path = os.path.join(current_dir, "repo")
+    if not os.path.exists(clone_path):
+        os.mkdir(clone_path)
+
+    Repo.clone_from(repo_url, clone_path)
+
+def count_lines(repo_path):
+    summary = ProjectSummary()
+    for root, _, files in os.walk(repo_path):
+        for file in files:
+            if file.endswith(".java"):
+                file_path = os.path.join(root, file)
+                analysis = SourceAnalysis.from_file(file_path, "java", encoding="utf-8")
+                summary.add(analysis)
+
+    code_lines = summary.total_code_count
+    comment_lines = summary.total_documentation_count
+
+    return code_lines, comment_lines
+
+def remove_readonly(func, path, _):
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+
+def remove_repo(repo_path):
+    try:
+        subprocess.run(["git", "gc", "--prune=now"], cwd=repo_path, check=True)
+    except Exception as e:
+        print(f"⚠ Erro ao liberar repositório: {e}")
+
+    try:
+        shutil.rmtree(repo_path, onerror=remove_readonly)
+    except Exception as e:
+        print(f"⚠ Erro ao excluir repositório: {e}")
 
 def plotGraphs(df):
     """Gera gráficos com base nos dados coletados, mostrando apenas o top 10."""
