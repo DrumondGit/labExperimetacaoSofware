@@ -13,9 +13,12 @@ from dotenv import load_dotenv
 from git import Repo
 from pygount import ProjectSummary, SourceAnalysis
 
+import quality_metrics_adapter
+
 load_dotenv()
 token = os.getenv("GITHUB_TOKEN")
-github_url = os.getenv("GITHUB_URL")
+github_SSH = os.getenv("GITHUB_SSH")
+ck_path = os.getenv("CK_REPO_PATH")
 
 if not token:
     raise ValueError("Erro: O token do GitHub não foi encontrado. Verifique o arquivo .env.")
@@ -32,8 +35,8 @@ def fetchRepositories():
     """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
     allRepos = []
     cursor = None
-    totalRepos = 2  # Número total de repositórios desejado
-    batchSize = 2  # Repositórios por chamada
+    totalRepos = 3  # Número total de repositórios desejado
+    batchSize = 3  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
     for batch in range(numBatches):
@@ -41,7 +44,7 @@ def fetchRepositories():
 
         query = f"""
         {{
-          search(query: "stars:>10000 language:Java", type: REPOSITORY, first: {batchSize}, after: {json.dumps(cursor) if cursor else "null"}) {{
+          search(query: "stars:>10000 language:Java -topic:tutorial -topic:learning -topic:javaguide", type: REPOSITORY, first: {batchSize}, after: {json.dumps(cursor) if cursor else "null"}) {{
             edges {{
               node {{
                 ... on Repository {{
@@ -50,6 +53,7 @@ def fetchRepositories():
                   createdAt
                   updatedAt
                   stargazerCount
+                  description
                   primaryLanguage {{ name }}
                   pullRequests(states: MERGED) {{ totalCount }}
                   releases {{ totalCount }}
@@ -67,7 +71,7 @@ def fetchRepositories():
         """
 
         for attempt in range(3):
-            response = requests.post(GITHUB_GRAPHQL_URL, json={"query": query}, headers=headers, )
+            response = requests.post(GITHUB_GRAPHQL_URL, json={"query": query}, headers=headers)
 
             if response.status_code == 200:
                 data = response.json()
@@ -77,7 +81,13 @@ def fetchRepositories():
                     print("⚠ Nenhum repositório encontrado.")
                     return None
 
-                allRepos.extend(repositories)
+                # Filtrar repositórios educacionais por palavras-chave na descrição ou nome
+                filtered_repos = [
+                    repo for repo in repositories
+                    if not is_educational(repo['node'])
+                ]
+
+                allRepos.extend(filtered_repos)
 
                 # Atualizar cursor para a próxima página
                 pageInfo = data['data']['search']['pageInfo']
@@ -94,37 +104,60 @@ def fetchRepositories():
     return allRepos
 
 
+def is_educational(repo):
+    keywords = ["tutorial", "example", "guide", "learning", "course", "demo", "how-to"]
+
+    name = repo.get("name", "").lower()
+    description = (repo.get("description") or "").lower()
+
+    return any(keyword in name or keyword in description for keyword in keywords)
+
+
+def has_java_files(repo_path):
+    for root, _, files in os.walk(repo_path):
+        if any(file.endswith(".java") for file in files):
+            return True
+    return False
+
+
 def processData(repositories):
-    """Processa os dados da API para um DataFrame."""
+    """Processa os dados da API para um DataFrame, excluindo repositórios sem arquivos .java."""
     repoList = []
     current_dir = os.path.dirname(__file__)
 
     print("🔄 Coletando dados dos repositórios...\n")
 
     for repo in repositories:
-
         node = repo['node']
         repo_age = calculate_repos_age(node['createdAt'])
-        repo_url = f"{github_url}/{node['owner']["login"]}/{node['name']}"
+        repo_url = f"{github_SSH}{node['owner']['login']}/{node['name']}.git"
         clone_repo(current_dir, repo_url)
         repo_path = os.path.join("repo")
         cloned_repo_path = os.path.join(current_dir, "repo")
-        if os.path.exists(cloned_repo_path):
+        output_path = os.path.join(repo_path, "ck_analysis/")
+
+        if os.path.exists(cloned_repo_path) and has_java_files(repo_path):
             code_lines, comment_lines = count_lines(repo_path)
+            quality_metrics_adapter.run_ck(repo_path, output_path, ck_path)
+            quality_metrics = quality_metrics_adapter.summarize_ck_results(output_path)
             remove_repo(cloned_repo_path)
 
-        repoList.append({
-            "Nome": node['name'],
-            "Proprietário": node['owner']['login'],
-            "Idade": f"{repo_age} anos",
-            "Estrelas": node['stargazerCount'],
-            "Pull Requests Aceitos": node['pullRequests']['totalCount'],
-            "Releases": node['releases']['totalCount'],
-            "Linhas de código": code_lines,
-            "Linhas de comentário": comment_lines
-        })
+            repoList.append({
+                "Nome": node['name'],
+                "Proprietário": node['owner']['login'],
+                "Idade": f"{repo_age} anos",
+                "Estrelas": node['stargazerCount'],
+                "Pull Requests Aceitos": node['pullRequests']['totalCount'],
+                "Releases": node['releases']['totalCount'],
+                "Linhas de código": code_lines,
+                "Linhas de comentário": comment_lines,
+                **quality_metrics
+            })
+        else:
+            print(f"❌ Repositório {node['name']} ignorado (não contém arquivos .java)")
 
     return pd.DataFrame(repoList)
+
 
 def calculate_repos_age(creation_date):
     repo_age_timezone = datetime.now(timezone.utc) - pd.to_datetime(creation_date)

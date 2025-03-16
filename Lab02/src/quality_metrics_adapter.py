@@ -1,28 +1,14 @@
 import os
 import subprocess
 
-from git import Repo
+import pandas as pd
 
-ck_url = os.getenv("CK_REPO_URL")
-
-# Diretório onde os repositórios estão clonados
-# repos_dir = "/caminho/para/repositorios"
-# Diretório de saída para os resultados do CK
-# output_dir = "/caminho/para/saida"
-# current_dir = os.path.dirname(__file__)
-#
-# ck_dir = os.path.join(current_dir, "ck")
-
-def clone_ck_repo(current_dir):
-    Repo.clone_from(ck_url, current_dir)
-
-def generate_jar_files (current_dir, ck_dir):
-    os.chdir(ck_dir)
-    command = ["mvn", "clean", "install", "-U"]
-    subprocess.run(command)
 
 def run_ck(repo_path, output_path, ck_dir):
     ck_jar_path = os.path.join(ck_dir, "target/ck-0.7.1-SNAPSHOT-jar-with-dependencies.jar")
+
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
 
     command = [
         "java", "-jar", ck_jar_path,
@@ -34,17 +20,32 @@ def run_ck(repo_path, output_path, ck_dir):
     ]
     subprocess.run(command)
 
-# Percorre todos os repositórios no diretório especificado
-# for repo_name in os.listdir(repos_dir):
-#     repo_path = os.path.join(repos_dir, repo_name)
-#     repo_output_dir = os.path.join(output_dir, repo_name)
-#
-#     # Cria o diretório de saída para o repositório atual
-#     os.makedirs(repo_output_dir, exist_ok=True)
-#
-#     # Executa o CK no repositório atual
-#     print(f"Analisando repositório: {repo_name}")
-#     run_ck(repo_path, repo_output_dir)
-#     print(f"Análise concluída para: {repo_name}")
-#
-# print("Análise de todos os repositórios concluída.")
+
+def summarize_ck_results(output_path):
+    if not os.path.exists(output_path) or not os.path.isdir(output_path):
+        raise FileNotFoundError(f"Diretório {output_path} não encontrado!")
+
+    csv_files = [f for f in os.listdir(output_path) if f.endswith(".csv")]
+
+    if not csv_files:
+        raise FileNotFoundError(f"Nenhum arquivo CSV encontrado no diretório {output_path}!")
+
+    metrics_summary = {
+        "Média CBO (Classes)": None,
+        "Média DIT (Classes)": None,
+        "Média LCOM (Classes)": None,
+        "Média CBO (Métodos)": None,
+    }
+
+    for csv_file in csv_files:
+        file_path = os.path.join(output_path, csv_file)
+        df = pd.read_csv(file_path)
+
+        if csv_file.__contains__("class"):
+            metrics_summary["Média CBO (Classes)"] = df["cbo"].mean()
+            metrics_summary["Média DIT (Classes)"] = df["dit"].mean()
+            metrics_summary["Média LCOM (Classes)"] = df["lcom"].mean()
+        elif csv_file.__contains__("method"):
+            metrics_summary["Média CBO (Métodos)"] = df["cbo"].mean()
+
+    return metrics_summary
