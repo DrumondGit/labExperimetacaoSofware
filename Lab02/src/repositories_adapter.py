@@ -323,3 +323,28 @@ def plot_top_languages(df):
 
     # Exibir gráfico
     plt.show()
+
+
+def save_repo_metrics_to_csv(df, repo_name, output_dir="output"):
+    """Salva os dados de um repositório específico em um arquivo CSV."""
+    if df is None or df.empty:
+        print("⚠ Sem dados para salvar.")
+        return
+    
+    if repo_name not in df["Nome"].values:
+        print(f"⚠ Repositório '{repo_name}' não encontrado nos dados coletados.")
+        return
+    
+    # Filtrar os dados do repositório desejado
+    repo_data = df[df["Nome"] == repo_name]
+    
+    # Criar diretório de saída, se não existir
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Caminho do arquivo CSV
+    csv_path = os.path.join(output_dir, f"{repo_name}_metrics.csv")
+    
+    # Salvar em CSV
+    repo_data.to_csv(csv_path, index=False, encoding="utf-8-sig")
+    
+    print(f"✅ Dados do repositório '{repo_name}' salvos em: {csv_path}")
