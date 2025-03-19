@@ -13,9 +13,9 @@ def run_ck(repo_path, output_path, ck_dir):
     command = [
         "java", "-jar", ck_jar_path,
         repo_path,
-        "false",
+        "true",
         "0",
-        "false",
+        "true",
         output_path
     ]
     subprocess.run(command)
