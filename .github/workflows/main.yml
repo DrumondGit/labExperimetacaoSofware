@@ -17,7 +17,7 @@ jobs:
       - name: 📥 Checkout do código
         uses: actions/checkout@v4
       - name: 🔄 Clonar repositório externo
-        run: git clone https://github.com/mauricioaniche/ck.git https://github.com/organização/repositorio-externo.git Lab02
+        run: git clone https://github.com/mauricioaniche/ck.git Lab02/ck-repo
 
 
       - name: 🐍 Configurar Python
@@ -41,9 +41,3 @@ jobs:
           API_URL: ${{ secrets.API_URL }}
           TOKEN: ${{ secrets.TOKEN }}
           CK_REPO_URL: ${{ secrets.CK_REPO_URL }}
-
-      - name: 📂 Salvar Resultados (Opcional)
-        uses: actions/upload-artifact@v3
-        with:
-          name: metrics-results
-          path: Lab02/repo/ck_analysis/  # Ajuste conforme necessário
