@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: 📥 Checkout do código
         uses: actions/checkout@v4
+      - name: 🔄 Clonar repositório externo
+        run: git clone https://github.com/mauricioaniche/ck.git https://github.com/organização/repositorio-externo.git Lab02
+
 
       - name: 🐍 Configurar Python
         uses: actions/setup-python@v4
@@ -26,8 +29,18 @@ jobs:
         run: |
           pip install json5 python-dotenv matplotlib pandas requests GitPython pygount
 
+      - name: 🌍 Configurar Variáveis de Ambiente
+        run: |
+          echo "API_URL=${{ secrets.API_URL }}" >> $GITHUB_ENV
+          echo "TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
+          echo "CK_REPO_URL=${{ secrets.CK_REPO_URL }}" >> $GITHUB_ENV
+
       - name: 🚀 Rodar Script de Métricas
         run: python Lab02/src/main.py
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          TOKEN: ${{ secrets.TOKEN }}
+          CK_REPO_URL: ${{ secrets.CK_REPO_URL }}
 
       - name: 📂 Salvar Resultados (Opcional)
         uses: actions/upload-artifact@v3
