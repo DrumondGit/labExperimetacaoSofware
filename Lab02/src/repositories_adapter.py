@@ -35,8 +35,8 @@ def fetchRepositories():
     """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
     allRepos = []
     cursor = None
-    totalRepos = 3  # Número total de repositórios desejado
-    batchSize = 3  # Repositórios por chamada
+    totalRepos = 2  # Número total de repositórios desejado
+    batchSize = 1  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
     for batch in range(numBatches):
@@ -130,31 +130,33 @@ def processData(repositories):
     for repo in repositories:
         node = repo['node']
         repo_age = calculate_repos_age(node['createdAt'])
-        repo_url = f"{github_SSH}{node['owner']['login']}/{node['name']}.git"
+        repo_url = f"https://github.com/{node['owner']['login']}/{node['name']}.git"
         clone_repo(current_dir, repo_url)
         repo_path = os.path.join("repo")
         cloned_repo_path = os.path.join(current_dir, "repo")
         output_path = os.path.join(repo_path, "ck_analysis/")
+        print(cloned_repo_path)
+        print("teste")
+        print(repo_path)
+    
 
-        if os.path.exists(cloned_repo_path) and has_java_files(repo_path):
-            code_lines, comment_lines = count_lines(repo_path)
-            quality_metrics_adapter.run_ck(repo_path, output_path, ck_path)
-            quality_metrics = quality_metrics_adapter.summarize_ck_results(output_path)
-            remove_repo(cloned_repo_path)
+        code_lines, comment_lines = count_lines(repo_path)
+        quality_metrics_adapter.run_ck(repo_path, output_path, ck_path)
+        quality_metrics = quality_metrics_adapter.summarize_ck_results(output_path)
+        remove_repo(cloned_repo_path)
 
-            repoList.append({
-                "Nome": node['name'],
-                "Proprietário": node['owner']['login'],
-                "Idade": f"{repo_age} anos",
-                "Estrelas": node['stargazerCount'],
-                "Pull Requests Aceitos": node['pullRequests']['totalCount'],
-                "Releases": node['releases']['totalCount'],
-                "Linhas de código": code_lines,
-                "Linhas de comentário": comment_lines,
-                **quality_metrics
-            })
-        else:
-            print(f"❌ Repositório {node['name']} ignorado (não contém arquivos .java)")
+        repoList.append({
+            "Nome": node['name'],
+            "Proprietário": node['owner']['login'],
+            "Idade": f"{repo_age} anos",
+            "Estrelas": node['stargazerCount'],
+            "Pull Requests Aceitos": node['pullRequests']['totalCount'],
+            "Releases": node['releases']['totalCount'],
+            "Linhas de código": code_lines,
+            "Linhas de comentário": comment_lines,
+            **quality_metrics
+        })
+
 
     return pd.DataFrame(repoList)
 

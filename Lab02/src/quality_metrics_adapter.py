@@ -8,14 +8,14 @@ def run_ck(repo_path, output_path, ck_dir):
     ck_jar_path = os.path.join(ck_dir, "target/ck-0.7.1-SNAPSHOT-jar-with-dependencies.jar")
 
     if not os.path.exists(output_path):
-        os.mkdir(output_path)
+        os.makedirs(output_path)
 
     command = [
         "java", "-jar", ck_jar_path,
         repo_path,
-        "false",
+        "true",
         "0",
-        "false",
+        "true",
         output_path
     ]
     subprocess.run(command)
