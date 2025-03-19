@@ -16,9 +16,14 @@ from pygount import ProjectSummary, SourceAnalysis
 import quality_metrics_adapter
 
 load_dotenv()
-token = os.getenv("GITHUB_TOKEN")
-github_SSH = os.getenv("GITHUB_SSH")
-ck_path = os.getenv("CK_REPO_PATH")
+# token = os.getenv("GITHUB_TOKEN")
+# github_SSH = os.getenv("GITHUB_SSH")
+# ck_path = os.getenv("CK_REPO_PATH")
+
+GITHUB_GRAPHQL_URL = os.environ.get("API_URL")
+token = os.environ.get("GITHUB_TOKEN")
+USERNAME = os.environ.get("GITHUB_USERNAME")
+ck_path = os.environ.get("CK_REPO_URL")
 
 if not token:
     raise ValueError("Erro: O token do GitHub não foi encontrado. Verifique o arquivo .env.")
@@ -28,7 +33,7 @@ headers = {
     "Content-Type": "application/json"
 }
 
-GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
+#GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
 
 
 def fetchRepositories():
