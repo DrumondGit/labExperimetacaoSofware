@@ -21,15 +21,12 @@ load_dotenv()
 # ck_path = os.getenv("CK_REPO_PATH")
 
 GITHUB_GRAPHQL_URL = os.environ.get("API_URL")
-token = os.environ.get("TOKEN")
+TOKEN = os.environ.get("TOKEN")
 USERNAME = os.environ.get("GITHUB_USERNAME")
 ck_path = os.environ.get("CK_REPO_URL")
 
-if not token:
-    raise ValueError("Erro: O token do GitHub não foi encontrado. Verifique o arquivo .env.")
-
 headers = {
-    "Authorization": f"Bearer {token}",
+    "Authorization": f"Bearer {TOKEN}",
     "Content-Type": "application/json"
 }
 
