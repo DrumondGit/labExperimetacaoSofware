@@ -41,9 +41,3 @@ jobs:
           API_URL: ${{ secrets.API_URL }}
           TOKEN: ${{ secrets.TOKEN }}
           CK_REPO_URL: ${{ secrets.CK_REPO_URL }}
-
-      - name: 📂 Salvar Resultados (Opcional)
-        uses: actions/upload-artifact@v3
-        with:
-          name: metrics-results
-          path: Lab02/ck_analysis/  # Ajuste conforme necessário
