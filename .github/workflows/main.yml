@@ -1,0 +1,36 @@
+name: Metrics Pipeline
+
+on: 
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Permite rodar manualmente pelo GitHub Actions
+
+jobs:
+  generate-metrics:
+    runs-on: ubuntu-latest  # Pode ser windows-latest se precisar de algo específico
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'  # Use a versão que está rodando localmente
+
+      - name: 📦 Instalar Dependências
+        run: |
+          pip install json5 python-dotenv matplotlib pandas requests GitPython pygount
+
+      - name: 🚀 Rodar Script de Métricas
+        run: python Lab02/src/main.py
+
+      - name: 📂 Salvar Resultados (Opcional)
+        uses: actions/upload-artifact@v3
+        with:
+          name: metrics-results
+          path: Lab02/repo/ck_analysis/  # Ajuste conforme necessário
