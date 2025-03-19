@@ -46,4 +46,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: metrics-results
-          path: Lab02/repo/ck_analysis/  # Ajuste conforme necessário
+          path: Lab02/ck_analysis/  # Ajuste conforme necessário
