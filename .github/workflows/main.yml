@@ -32,7 +32,8 @@ jobs:
       - name: ☕ Configurar Java
         uses: actions/setup-java@v3
         with:
-          java-version: '11'  # Use a versão que é necessária para o seu projeto
+          java-version: '11'  # Use a versão do Java necessária para seu projeto
+          distribution: 'adoptopenjdk'  # Especificando a distribuição do Java (adoptopenjdk é uma distribuição popular)
 
       - name: 📦 Instalar Maven
         run: |
