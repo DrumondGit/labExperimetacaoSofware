@@ -33,7 +33,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: '11'  # Use a versão do Java necessária para seu projeto
-          distribution: 'adoptopenjdk'  # Especificando a distribuição do Java (adoptopenjdk é uma distribuição popular)
+          distribution: 'temurin'  # Alterado para 'temurin' (substituindo 'adoptopenjdk')
 
       - name: 📦 Instalar Maven
         run: |
