@@ -29,11 +29,11 @@ jobs:
         run: |
           pip install json5 python-dotenv matplotlib pandas requests GitPython pygount
 
-      - name: ☕ Configurar Java
+      - name: ☕ Configurar Java 17
         uses: actions/setup-java@v3
         with:
-          java-version: '11'  # Use a versão do Java necessária para seu projeto
-          distribution: 'temurin'  # Alterado para 'temurin' (substituindo 'adoptopenjdk')
+          java-version: '17'  # Atualizando para Java 17
+          distribution: 'temurin'  # Garantir que usamos o Adoptium (temurin)
 
       - name: 📦 Instalar Maven
         run: |
