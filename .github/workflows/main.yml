@@ -32,6 +32,6 @@ jobs:
       - name: 🚀 Rodar Script de Métricas
         run: python Lab02/src/main.py
         env:
-          API_URL: ${{ secrets.API_URL }}
+          API_URL: "https://api.github.com/graphql"
           TOKEN: ${{ secrets.TOKEN }}
           CK_REPO_URL: ${{ secrets.CK_REPO_URL }}  # Usando a variável diretamente
