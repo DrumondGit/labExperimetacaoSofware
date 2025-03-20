@@ -11,8 +11,7 @@ on:
 
 jobs:
   generate-metrics:
-    runs-on: ubuntu-latest  # Pode ser windows-latest se precisar de algo específico]
-    environment: GITHUB_TOKEN
+    runs-on: ubuntu-latest  # Pode ser windows-latest se precisar de algo específico
 
     steps:
       - name: 📥 Checkout do código
@@ -26,12 +25,28 @@ jobs:
         with:
           python-version: '3.11'  # Use a versão que está rodando localmente
 
-      - name: 📦 Instalar Dependências
+      - name: 📦 Instalar Dependências Python
         run: |
           pip install json5 python-dotenv matplotlib pandas requests GitPython pygount
 
+      - name: ☕ Configurar Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'  # Use a versão que é necessária para o seu projeto
+
+      - name: 📦 Instalar Maven
+        run: |
+          sudo apt update
+          sudo apt install maven -y
+
+      - name: 🚀 Rodar Maven no CK Repo
+        run: |
+          cd Lab02/ck-repo  # Navegar para o diretório do repositório clonado
+          mvn clean install -U  # Rodar o comando Maven para buildar o projeto com a opção -U
+          
       - name: 🚀 Rodar Script de Métricas
-        run: python Lab02/src/main.py
+        run: |
+          python Lab02/src/main.py
         env:
           API_URL: "https://api.github.com/graphql"
           TOKEN: ${{ secrets.TOKEN }}
