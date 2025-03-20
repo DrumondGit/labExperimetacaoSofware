@@ -20,7 +20,7 @@ load_dotenv()
 # github_SSH = os.getenv("GITHUB_SSH")
 # ck_path = os.getenv("CK_REPO_PATH")
 
-GITHUB_GRAPHQL_URL = os.environ.get("API_URL")
+API_URL = os.environ.get("API_URL")
 TOKEN = os.environ.get("TOKEN")
 USERNAME = os.environ.get("GITHUB_USERNAME")
 ck_path = os.environ.get("CK_REPO_URL")
@@ -73,7 +73,7 @@ def fetchRepositories():
         """
 
         for attempt in range(3):
-            response = requests.post(GITHUB_GRAPHQL_URL, json={"query": query}, headers=headers)
+            response = requests.post(API_URL, json={"query": query}, headers=headers)
 
             if response.status_code == 200:
                 data = response.json()
