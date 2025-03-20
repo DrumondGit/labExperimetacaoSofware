@@ -31,9 +31,9 @@ jobs:
 
       - name: 🌍 Configurar Variáveis de Ambiente
         run: |
-          echo "API_URL=${{ secrets.API_URL }}" >> $GITHUB_ENV
-          echo "TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
-          echo "CK_REPO_URL=${{ secrets.CK_REPO_URL }}" >> $GITHUB_ENV
+          echo "API_URL=${{ secrets.API_URL }}" >> $GITHUB_TOKEN
+          echo "TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_TOKEN
+          echo "CK_REPO_URL=${{ secrets.CK_REPO_URL }}" >> $GITHUB_TOKEN
 
       - name: 🚀 Rodar Script de Métricas
         run: python Lab02/src/main.py
