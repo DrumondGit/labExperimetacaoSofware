@@ -11,7 +11,8 @@ on:
 
 jobs:
   generate-metrics:
-    runs-on: ubuntu-latest  # Pode ser windows-latest se precisar de algo específico
+    runs-on: ubuntu-latest  # Pode ser windows-latest se precisar de algo específico]
+    environment: GITHUB_TOKEN
 
     steps:
       - name: 📥 Checkout do código
