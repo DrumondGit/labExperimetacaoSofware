@@ -11,7 +11,7 @@ on:
 
 jobs:
   generate-metrics:
-    runs-on: ubuntu-latest  # Pode ser windows-latest se precisar de algo específico
+    runs-on: ubuntu-latest  
     environment: GITHUB_TOKEN
 
     steps:
@@ -21,23 +21,103 @@ jobs:
       - name: 🐍 Configurar Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'  # Use a versão que está rodando localmente
+          python-version: '3.11'
 
       - name: 📦 Instalar Dependências Python
         run: |
-          pip install json5 python-dotenv matplotlib pandas requests GitPython pygount
+          pip install --quiet json5 python-dotenv matplotlib pandas requests GitPython pygount
 
-      - name: 🚀 Rodar Script de Métricas
-        run: |
-          python Lab02/src/main.py
+      # 🚀 Loop de execução em lotes CUMULATIVOS
+      - name: 🚀 Rodar Script de Métricas (Lote 1: 0-100)
+        run: python Lab02/src/main.py --start=0 --end=100 --quiet
         env:
           API_URL: "https://api.github.com/graphql"
           TOKEN: ${{ secrets.TOKEN }}
-          CK_REPO_URL: "${{ github.workspace }}/Lab02/ck-repo/ck-master" # Usando a variável diretamente
+          CK_REPO_URL: "${{ github.workspace }}/Lab02/ck-repo/ck-master"
 
-      - name: 📸 Salvar report
+      - name: 📤 Salvar Relatório Cumulativo (0-100)
         uses: actions/upload-artifact@v4
         with:
-          name: report
-          path: |
-            Lab02/reports
+          name: report-0-100
+          path: Lab02/reports
+
+      - name: 🚀 Rodar Script de Métricas (Lote 2: 0-200)
+        run: python Lab02/src/main.py --start=0 --end=200 --quiet
+
+      - name: 📤 Salvar Relatório Cumulativo (0-200)
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-0-200
+          path: Lab02/reports
+
+      - name: 🚀 Rodar Script de Métricas (Lote 3: 0-300)
+        run: python Lab02/src/main.py --start=0 --end=300 --quiet
+
+      - name: 📤 Salvar Relatório Cumulativo (0-300)
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-0-300
+          path: Lab02/reports
+
+      - name: 🚀 Rodar Script de Métricas (Lote 4: 0-400)
+        run: python Lab02/src/main.py --start=0 --end=400 --quiet
+
+      - name: 📤 Salvar Relatório Cumulativo (0-400)
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-0-400
+          path: Lab02/reports
+
+      - name: 🚀 Rodar Script de Métricas (Lote 5: 0-500)
+        run: python Lab02/src/main.py --start=0 --end=500 --quiet
+
+      - name: 📤 Salvar Relatório Cumulativo (0-500)
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-0-500
+          path: Lab02/reports
+
+      - name: 🚀 Rodar Script de Métricas (Lote 6: 0-600)
+        run: python Lab02/src/main.py --start=0 --end=600 --quiet
+
+      - name: 📤 Salvar Relatório Cumulativo (0-600)
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-0-600
+          path: Lab02/reports
+
+      - name: 🚀 Rodar Script de Métricas (Lote 7: 0-700)
+        run: python Lab02/src/main.py --start=0 --end=700 --quiet
+
+      - name: 📤 Salvar Relatório Cumulativo (0-700)
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-0-700
+          path: Lab02/reports
+
+      - name: 🚀 Rodar Script de Métricas (Lote 8: 0-800)
+        run: python Lab02/src/main.py --start=0 --end=800 --quiet
+
+      - name: 📤 Salvar Relatório Cumulativo (0-800)
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-0-800
+          path: Lab02/reports
+
+      - name: 🚀 Rodar Script de Métricas (Lote 9: 0-900)
+        run: python Lab02/src/main.py --start=0 --end=900 --quiet
+
+      - name: 📤 Salvar Relatório Cumulativo (0-900)
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-0-900
+          path: Lab02/reports
+
+      - name: 🚀 Rodar Script de Métricas (Lote 10: 0-1000)
+        run: python Lab02/src/main.py --start=0 --end=1000 --quiet
+
+      - name: 📤 Salvar Relatório FINAL (0-1000)
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-0-1000
+          path: Lab02/reports
