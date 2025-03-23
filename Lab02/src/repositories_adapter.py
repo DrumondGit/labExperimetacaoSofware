@@ -22,7 +22,7 @@ API_URL = os.environ.get("API_URL")
 TOKEN = os.environ.get("TOKEN")
 USERNAME = os.environ.get("GITHUB_USERNAME")
 ck_path = os.environ.get("CK_REPO_URL")
-GITHUB_GRAPHQL_URL = "https://api.github.com/graphql/"
+GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
 
 headers = {
     "Authorization": f"Bearer {TOKEN}",
