@@ -234,8 +234,13 @@ def remove_readonly(func, path, _):
     func(path)
 
 
-def plotGraphs(df, output_dir='Lab02/reports/graphs'):
-    """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como SVG."""
+import matplotlib.pyplot as plt
+import io
+import base64
+import os
+
+def plotGraphs(df, output_dir='Lab02/reports'):
+    """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como SVG embutidos no HTML."""
 
     # Criar diretório para salvar os gráficos, se não existir
     if not os.path.exists(output_dir):
@@ -244,6 +249,9 @@ def plotGraphs(df, output_dir='Lab02/reports/graphs'):
     # Definindo as métricas de qualidade
     metrics = ['Média CBO (Classes)', 'Média DIT (Classes)', 'Média LCOM (Classes)']
     
+    # Lista para armazenar gráficos gerados
+    graph_paths = []
+
     # Configuração para criar múltiplos gráficos
     fig, axes = plt.subplots(2, len(metrics), figsize=(15, 10))
     fig.suptitle('Popularidade vs Métricas de Qualidade e Maturidade vs Métricas de Qualidade')
@@ -266,12 +274,18 @@ def plotGraphs(df, output_dir='Lab02/reports/graphs'):
         ax2.set_ylabel(metric)
         ax2.grid(True)
 
-    # Salvar gráficos como SVGs dentro de Lab02/reports/graphs
-    graph_paths = []
+    # Salvar gráficos como SVG em memória
     for i in range(len(metrics)):
-        graph_path = os.path.join(output_dir, f"graph_{i+1}.svg")
-        fig.savefig(graph_path, format='svg')
-        graph_paths.append(f"graphs/graph_{i+1}.svg")  # Caminho relativo para o HTML
+        svg_output = io.StringIO()
+        fig.savefig(svg_output, format='svg')
+        svg_output.seek(0)  # Voltar ao início do arquivo
+
+        # Codificar o conteúdo SVG para Base64
+        svg_content = svg_output.getvalue()
+        encoded_svg = base64.b64encode(svg_content.encode('utf-8')).decode('utf-8')
+        
+        # Adicionar a tag de imagem SVG embutida no HTML
+        graph_paths.append(f"data:image/svg+xml;base64,{encoded_svg}")
 
     plt.tight_layout()
     plt.subplots_adjust(top=0.9)
@@ -341,14 +355,14 @@ def generate_html_report(df, graphs, report_path='Lab02/reports/report.html'):
         </table>
     """
     
-    # Adicionar gráficos ao HTML (supondo que 'graphs' seja uma lista de caminhos de arquivos de gráficos gerados)
+    # Adicionar gráficos ao HTML (usando Base64 incorporado diretamente)
     html_content += "<h2>Gráficos</h2>"
     
-    for i, graph_path in enumerate(graphs):
+    for i, graph in enumerate(graphs):
         html_content += f"""
         <div class="graph">
             <h3>Gráfico {i + 1}</h3>
-            <img src="{graph_path}" alt="Gráfico {i + 1}">
+            <img src="{graph}" alt="Gráfico {i + 1}">
         </div>
         """
     
