@@ -23,7 +23,7 @@ load_dotenv()
 API_URL = os.environ.get("API_URL")
 TOKEN = os.environ.get("TOKEN")
 USERNAME = os.environ.get("GITHUB_USERNAME")
-ck_path = os.environ.get("CK_REPO_PATH")
+ck_path = os.environ.get("CK_REPO_URL")
 
 headers = {
     "Authorization": f"Bearer {TOKEN}",
