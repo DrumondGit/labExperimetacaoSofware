@@ -234,10 +234,8 @@ def remove_readonly(func, path, _):
     func(path)
 
 
-import os
-
-def plotGraphs(df, output_dir='Lab02/reports'):
-    """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como PNG."""
+def plotGraphs(df, output_dir='Lab02/reports/graphs'):
+    """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como SVG."""
 
     # Criar diretório para salvar os gráficos, se não existir
     if not os.path.exists(output_dir):
@@ -268,20 +266,18 @@ def plotGraphs(df, output_dir='Lab02/reports'):
         ax2.set_ylabel(metric)
         ax2.grid(True)
 
-    # Salvar gráficos como PNGs dentro de Lab02/graphs
+    # Salvar gráficos como SVGs dentro de Lab02/reports/graphs
     graph_paths = []
     for i in range(len(metrics)):
-        graph_path = os.path.join(output_dir, f"graph_{i+1}.png")
-        fig.savefig(graph_path)
-        graph_paths.append(graph_path)
+        graph_path = os.path.join(output_dir, f"graph_{i+1}.svg")
+        fig.savefig(graph_path, format='svg')
+        graph_paths.append(f"graphs/graph_{i+1}.svg")  # Caminho relativo para o HTML
 
     plt.tight_layout()
     plt.subplots_adjust(top=0.9)
     plt.close(fig)  # Fechar o gráfico para liberar memória
 
     return graph_paths
-
-
 
 
 def generate_html_report(df, graphs, report_path='Lab02/reports/report.html'):
