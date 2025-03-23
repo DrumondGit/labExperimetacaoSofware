@@ -29,7 +29,7 @@ jobs:
 
       # 🚀 Loop de execução em lotes CUMULATIVOS
       - name: 🚀 Rodar Script de Métricas (Lote 1:0-100)
-        run: python Lab02/src/main.py --start=0 --end=100 --quiet
+        run: python Lab02/src/main.py --start=0 --end=1000 --quiet
         env:
           API_URL: "https://api.github.com/graphql"
           TOKEN: ${{ secrets.TOKEN }}
@@ -42,7 +42,7 @@ jobs:
           path: Lab02/reports
 
       - name: 🚀 Rodar Script de Métricas (Lote 2:0-200)
-        run: python Lab02/src/main.py --start=0 --end=200 --quiet
+        run: python Lab02/src/main.py --start=0 --end=1000 --quiet
 
       - name: 📤 Salvar Relatório Cumulativo (0-200)
         uses: actions/upload-artifact@v4
