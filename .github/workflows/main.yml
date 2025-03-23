@@ -18,9 +18,6 @@ jobs:
       - name: 📥 Checkout do código
         uses: actions/checkout@v4
 
-      - name: 🔄 Clonar repositório externo
-        run: git clone https://github.com/mauricioaniche/ck.git Lab02/ck-repo
-
       - name: 🐍 Configurar Python
         uses: actions/setup-python@v4
         with:
@@ -43,4 +40,4 @@ jobs:
         with:
           name: report
           path: |
-            Lab02/report.html
+            Lab02/reports
