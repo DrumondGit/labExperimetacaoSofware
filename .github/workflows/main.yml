@@ -45,11 +45,11 @@ jobs:
         run: |
           cd Lab02/ck-repo  # Navegar para o diretório do repositório clonado
           mvn clean package
-          
+
       - name: 🚀 Rodar Script de Métricas
         run: |
           python Lab02/src/main.py
         env:
           API_URL: "https://api.github.com/graphql"
           TOKEN: ${{ secrets.TOKEN }}
-          CK_REPO_PATH: "${{ github.workspace }}/Lab02/ck-repo/ck-master" # Usando a variável diretamente
+          CK_REPO_PATH: Lab02/ck-repo/ck-master/ # Usando a variável diretamente
