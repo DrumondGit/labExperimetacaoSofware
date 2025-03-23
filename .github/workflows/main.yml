@@ -39,8 +39,8 @@ jobs:
           CK_REPO_URL: "${{ github.workspace }}/Lab02/ck-repo/ck-master" # Usando a variável diretamente
 
       - name: 📸 Salvar report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: report
           path: |
-            Lab02
+            Lab02/reports.html
