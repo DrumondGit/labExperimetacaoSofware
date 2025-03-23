@@ -7,8 +7,6 @@ repositories = repositories_adapter.fetchRepositories()
 if repositories:
     df = repositories_adapter.processData(repositories)
 
-    # STATISTICS_CALCULATOR_VALUES = df[
-    #     ['Estrelas', 'Releases', 'Pull Requests Aceitos', 'Idade']]
 
     if df is not None:
         pd.set_option('display.max_rows', None)
@@ -16,4 +14,5 @@ if repositories:
 
         print(df.to_string())
 
-        repositories_adapter.plotGraphs(df)
+        graphs = repositories_adapter.plotGraphs(df)
+        repositories_adapter.generate_html_report(df, graphs)

@@ -18,15 +18,14 @@ import quality_metrics_adapter
 # Carregar variáveis de ambiente
 load_dotenv()
 
-TOKEN = os.getenv("GITHUB_TOKEN")
-API_URL = os.getenv("GITHUB_API_URL")
-ck_path = os.getenv("CK_REPO_PATH")
+# TOKEN = os.getenv("GITHUB_TOKEN")
+# API_URL = os.getenv("GITHUB_API_URL")
+# ck_path = os.getenv("CK_REPO_PATH")
 
 
-# API_URL = os.environ.get("API_URL")
-# TOKEN = os.environ.get("TOKEN")
-# USERNAME = os.environ.get("GITHUB_USERNAME")
-# ck_path = os.environ.get("CK_REPO_URL")
+API_URL = os.environ.get("API_URL")
+TOKEN = os.environ.get("TOKEN")
+ck_path = os.environ.get("CK_REPO_URL")
 GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
 
 headers = {
@@ -39,7 +38,7 @@ def fetchRepositories():
     """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
     allRepos = []
     cursor = None
-    totalRepos = 5  # Número total de repositórios desejado
+    totalRepos = 3  # Número total de repositórios desejado
     batchSize = 1  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
@@ -235,9 +234,15 @@ def remove_readonly(func, path, _):
     func(path)
 
 
-def plotGraphs(df):
-    """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade."""
-    
+import os
+
+def plotGraphs(df, output_dir='graphs'):
+    """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como PNG."""
+
+    # Criar diretório para salvar os gráficos, se não existir
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # Definindo as métricas de qualidade
     metrics = ['Média CBO (Classes)', 'Média DIT (Classes)', 'Média LCOM (Classes)']
     
@@ -263,10 +268,103 @@ def plotGraphs(df):
         ax2.set_ylabel(metric)
         ax2.grid(True)
 
+    # Salvar gráficos como PNGs
+    graph_paths = []
+    for i in range(len(metrics)):
+        graph_path = os.path.join(output_dir, f"graph_{i+1}.png")
+        fig.savefig(graph_path)
+        graph_paths.append(graph_path)
+
     plt.tight_layout()
     plt.subplots_adjust(top=0.9)
-    plt.show()
+    plt.close(fig)  # Fechar o gráfico para liberar memória
+
+    return graph_paths
 
 
+
+def generate_html_report(df, graphs, report_path='Lab02/report.html'):
+    # Iniciar o conteúdo HTML
+    html_content = """
+    <html>
+    <head>
+        <title>Relatório de Repositórios</title>
+        <style>
+            body { font-family: Arial, sans-serif; }
+            h1 { color: #2c3e50; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+            th { background-color: #f2f2f2; }
+            .graph { width: 100%; height: 400px; margin-top: 30px; }
+        </style>
+    </head>
+    <body>
+        <h1>Relatório de Repositórios GitHub</h1>
+        <h2>Dados dos Repositórios</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Proprietário</th>
+                    <th>Idade</th>
+                    <th>Estrelas</th>
+                    <th>Pull Requests Aceitos</th>
+                    <th>Releases</th>
+                    <th>Linhas de Código</th>
+                    <th>Linhas de Comentário</th>
+                    <th>Média CBO (Classes)</th>
+                    <th>Média DIT (Classes)</th>
+                    <th>Média LCOM (Classes)</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+    
+    # Adicionar as linhas da tabela com os dados do DataFrame
+    for _, row in df.iterrows():
+        html_content += f"""
+        <tr>
+            <td>{row['Nome']}</td>
+            <td>{row['Proprietário']}</td>
+            <td>{row['Idade']}</td>
+            <td>{row['Estrelas']}</td>
+            <td>{row['Pull Requests Aceitos']}</td>
+            <td>{row['Releases']}</td>
+            <td>{row['Linhas de código']}</td>
+            <td>{row['Linhas de comentário']}</td>
+            <td>{row['Média CBO (Classes)']}</td>
+            <td>{row['Média DIT (Classes)']}</td>
+            <td>{row['Média LCOM (Classes)']}</td>
+        </tr>
+        """
+    
+    # Fechar a tabela
+    html_content += """
+            </tbody>
+        </table>
+    """
+    
+    # Adicionar gráficos ao HTML (supondo que 'graphs' seja uma lista de caminhos de arquivos de gráficos gerados)
+    html_content += "<h2>Gráficos</h2>"
+    
+    for i, graph_path in enumerate(graphs):
+        html_content += f"""
+        <div class="graph">
+            <h3>Gráfico {i + 1}</h3>
+            <img src="{graph_path}" alt="Gráfico {i + 1}">
+        </div>
+        """
+    
+    # Fechar o HTML
+    html_content += """
+    </body>
+    </html>
+    """
+    
+    # Salvar o relatório no caminho especificado
+    with open(report_path, 'w') as file:
+        file.write(html_content)
+    
+    print(f"✅ Relatório gerado com sucesso: {report_path}")
 
 
