@@ -18,9 +18,9 @@ import quality_metrics_adapter
 # Carregar variáveis de ambiente
 load_dotenv()
 
-TOKEN = os.getenv("GITHUB_TOKEN")
-API_URL = os.getenv("GITHUB_API_URL")
-ck_path = os.getenv("CK_REPO_PATH")
+#TOKEN = os.getenv("GITHUB_TOKEN")
+#API_URL = os.getenv("GITHUB_API_URL")
+#ck_path = os.getenv("CK_REPO_PATH")
 
 API_URL = os.environ.get("API_URL")
 TOKEN = os.environ.get("TOKEN")
