@@ -30,22 +30,6 @@ jobs:
         run: |
           pip install json5 python-dotenv matplotlib pandas requests GitPython pygount
 
-      - name: ☕ Configurar Java 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'  # Atualizando para Java 17
-          distribution: 'temurin'  # Garantir que usamos o Adoptium (temurin)
-
-      - name: 📦 Instalar Maven
-        run: |
-          sudo apt update
-          sudo apt install maven -y
-
-      - name: 🚀 Rodar Maven no CK Repo
-        run: |
-          cd Lab02/ck-repo  # Navegar para o diretório do repositório clonado
-          mvn clean package
-
       - name: 🚀 Rodar Script de Métricas
         run: |
           python Lab02/src/main.py
