@@ -43,4 +43,4 @@ jobs:
         with:
           name: report
           path: |
-            Lab02/reports.html
+            Lab02/report.html
