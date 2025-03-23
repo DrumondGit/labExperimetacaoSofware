@@ -133,7 +133,7 @@ def processData(repositories):
     for repo in repositories:
         node = repo['node']
         repo_age = calculate_repos_age(node['createdAt'])
-        repo_url = f"{github_URL}{node['owner']['login']}/{node['name']}.git"
+        repo_url = f"{API_URL}{node['owner']['login']}/{node['name']}.git"
         clone_repo(current_dir, repo_url)
         repo_path = os.path.join("repo")
         cloned_repo_path = os.path.join(current_dir, "repo")
