@@ -352,7 +352,7 @@ def generate_html_report(df, graphs, report_path='Lab02/reports/report.html'):
         html_content += f"""
         <div class="graph">
             <h3>Gráfico {i + 1}</h3>
-            <img src="{graph_path}" alt="Gráfico {i + 1}">
+            <img src="Lab02/reports/graph_1.png" alt="Gráfico {i + 1}">
         </div>
         """
     
