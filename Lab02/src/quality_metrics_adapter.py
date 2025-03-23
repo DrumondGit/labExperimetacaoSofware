@@ -22,6 +22,9 @@ def run_ck(repo_path, output_path, ck_dir):
     subprocess.run(command)
 
 
+import os
+import pandas as pd
+
 def summarize_ck_results(output_path):
     if not os.path.exists(output_path) or not os.path.isdir(output_path):
         raise FileNotFoundError(f"Diretório {output_path} não encontrado!")
@@ -40,13 +43,29 @@ def summarize_ck_results(output_path):
 
     for csv_file in csv_files:
         file_path = os.path.join(output_path, csv_file)
-        df = pd.read_csv(file_path)
+        
+        # Verificar se o arquivo não está vazio antes de tentar ler
+        if os.path.getsize(file_path) == 0:
+            print(f"⚠ O arquivo {csv_file} está vazio e foi ignorado.")
+            continue  # Ignora o arquivo vazio
+        
+        try:
+            df = pd.read_csv(file_path)
+        except Exception as e:
+            print(f"Erro ao ler o arquivo {csv_file}: {e}")
+            continue  # Ignora arquivos que não puderam ser lidos
 
         if csv_file.__contains__("class"):
-            metrics_summary["Média CBO (Classes)"] = df["cbo"].mean()
-            metrics_summary["Média DIT (Classes)"] = df["dit"].mean()
-            metrics_summary["Média LCOM (Classes)"] = df["lcom"].mean()
+            if "cbo" in df.columns and "dit" in df.columns and "lcom" in df.columns:
+                metrics_summary["Média CBO (Classes)"] = df["cbo"].mean()
+                metrics_summary["Média DIT (Classes)"] = df["dit"].mean()
+                metrics_summary["Média LCOM (Classes)"] = df["lcom"].mean()
+            else:
+                print(f"⚠ O arquivo {csv_file} não contém as colunas esperadas.")
         elif csv_file.__contains__("method"):
-            metrics_summary["Média CBO (Métodos)"] = df["cbo"].mean()
+            if "cbo" in df.columns:
+                metrics_summary["Média CBO (Métodos)"] = df["cbo"].mean()
+            else:
+                print(f"⚠ O arquivo {csv_file} não contém a coluna 'cbo'.")
 
     return metrics_summary

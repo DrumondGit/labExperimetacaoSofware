@@ -18,14 +18,14 @@ import quality_metrics_adapter
 # Carregar variáveis de ambiente
 load_dotenv()
 
-# TOKEN = os.getenv("GITHUB_TOKEN")
-# API_URL = os.getenv("GITHUB_API_URL")
-# ck_path = os.getenv("CK_REPO_PATH")
-
+TOKEN = os.getenv("GITHUB_TOKEN")
+API_URL = os.getenv("GITHUB_API_URL")
+ck_path = os.getenv("CK_REPO_PATH")
 
 API_URL = os.environ.get("API_URL")
 TOKEN = os.environ.get("TOKEN")
 ck_path = os.environ.get("CK_REPO_URL")
+
 GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
 
 headers = {
@@ -33,12 +33,14 @@ headers = {
     "Content-Type": "application/json"
 }
 
+# Limite máximo de caminho para Windows
+MAX_PATH_LENGTH = 260
 
 def fetchRepositories():
     """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
     allRepos = []
     cursor = None
-    totalRepos = 1000  # Número total de repositórios desejado
+    totalRepos = 20  # Número total de repositórios desejado
     batchSize = 1  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
@@ -105,7 +107,6 @@ def fetchRepositories():
 
     return allRepos
 
-
 def is_educational(repo):
     keywords = ["tutorial", "example", "guide", "learning", "course", "demo", "how-to"]
 
@@ -113,7 +114,6 @@ def is_educational(repo):
     description = (repo.get("description") or "").lower()
 
     return any(keyword in name or keyword in description for keyword in keywords)
-
 
 def has_java_files(repo_path):
     print(f"Verificando arquivos em: {repo_path}")
@@ -127,8 +127,6 @@ def has_java_files(repo_path):
     print("❌ Nenhum arquivo .java encontrado.")
     return False
 
-
-
 def processData(repositories):
     """Processa os dados da API para um DataFrame, excluindo repositórios sem arquivos .java."""
     repoList = []
@@ -140,25 +138,36 @@ def processData(repositories):
         node = repo['node']
         repo_age = calculate_repos_age(node['createdAt'])
 
-        repo_url = f"https://github.com/{node['owner']['login']}/{node['name']}.git"
+        repo_name = node['name']  # Pegando o nome correto do repositório
+        # if len(repo_name) > 100:  # Limite de 100 caracteres para o nome do repositório
+        #     print(f"❌ Repositório {repo_name} ignorado (nome muito longo)")
+        #     continue
+        clean_name = clean_repo_name(repo_name)
 
-        clone_repo(current_dir, repo_url)
+        repo_url = f"https://github.com/{node['owner']['login']}/{clean_name}.git"
+
+        repo_owner = node['owner']['login']  # Nome do dono do repositório
+        current_dir = os.getcwd()
+        parent_path = os.path.dirname(current_dir)
+        print("Testeeeeeee")
+        print(parent_path)
+        repo_path = os.path.join(current_dir + "\labExperimetacaoSofware\\Lab02\src\\repo", clean_name)  # Definindo o caminho correto
+
+        # Verifica o comprimento do caminho antes de clonar
+        if len(repo_path) > MAX_PATH_LENGTH:
+            print(f"❌ Caminho do repositório {repo_name} é muito longo, ignorando...")
+            continue
         
-        repo_path = os.path.join("repo")
-        removed = repo_path
-        cloned_repo_path = os.path.join(repo_path, "repo_name")
-        if not os.path.exists(cloned_repo_path):
-            subprocess.run(["git", "clone", repo_url, cloned_repo_path])
-        output_path = os.path.join(cloned_repo_path, "ck_analysis/")
-        print("passou aqui")
-        print(output_path)
+        clone_repo(repo_path, repo_url)  # Clonando para o caminho certo
 
-        if os.path.exists(cloned_repo_path) and has_java_files(repo_path):
-            
+        output_path = os.path.join(current_dir  + "\labExperimetacaoSofware\\Lab02\src\\repo", clean_name)  # Definindo onde salvar os resultados do CK
+        output_path2 = os.path.join(current_dir  + "\labExperimetacaoSofware\\Lab02\src\\repo") 
+
+        if os.path.exists(output_path2) and has_java_files(repo_path):
             code_lines, comment_lines = count_lines(repo_path)
             quality_metrics_adapter.run_ck(repo_path, output_path, ck_path)
-            quality_metrics = quality_metrics_adapter.summarize_ck_results(output_path)
-            remove_repo(cloned_repo_path)
+            quality_metrics = quality_metrics_adapter.summarize_ck_results(output_path2)
+            remove_repo(output_path2)
 
             repoList.append({
                 "Nome": node['name'],
@@ -174,29 +183,30 @@ def processData(repositories):
         else:
             print(f"❌ Repositório {node['name']} ignorado (não contém arquivos .java)")
 
-        
-    remove_repo(cloned_repo_path)
-    
+    remove_repo(output_path2)
 
     return pd.DataFrame(repoList)
 
+import re
+def clean_repo_name(repo_name):
+    # Substitui caracteres não seguros por '_', ou outro caractere de sua escolha
+    clean_name = re.sub(r'[^\w\s-]', '_', repo_name)  # Substitui qualquer caractere que não seja alfanumérico ou hífen/espaco
+    clean_name = clean_name.strip()  # Remove espaços em excesso
+    return clean_name
 
 def calculate_repos_age(creation_date):
     repo_age_timezone = datetime.now(timezone.utc) - pd.to_datetime(creation_date)
     repo_age = repo_age_timezone.days / 325.25
     return round(float(repo_age), 1)
 
+def clone_repo(clone_path, repo_url):
+    if os.path.exists(clone_path):
+        remove_repo(clone_path)  # Remove se já existir
 
-def clone_repo(current_dir, repo_url):
-    clone_path = os.path.join(current_dir, "repo")
-    if not os.path.exists(clone_path):
-        os.mkdir(clone_path)
-    else:
-        remove_repo(clone_path)
-        os.mkdir(clone_path)
-
-    Repo.clone_from(repo_url, clone_path)
-
+    try:
+        Repo.clone_from(repo_url, clone_path)  # Clona para o caminho correto
+    except Exception as e:
+        print(f"⚠ Erro ao clonar o repositório: {e}")
 
 def count_lines(repo_path):
     summary = ProjectSummary()
@@ -213,16 +223,8 @@ def count_lines(repo_path):
     return code_lines, comment_lines
 
 def remove_repo(repo_path):
-    print("passou aqui no remove repoooooooooo")
-    """Remove o repositório da pasta 'repo'."""
+    """Remove um repositório clonado."""
     try:
-        # Rodar o comando de garbage collection do git para limpar o repositório, se necessário
-        subprocess.run(["git", "gc", "--prune=now"], cwd=repo_path, check=True)
-    except Exception as e:
-        print(f"⚠ Erro ao rodar git gc no repositório {repo_path}: {e}")
-
-    try:
-        # Remover o repositório (diretório) usando shutil.rmtree
         shutil.rmtree(repo_path, onerror=remove_readonly)
         print(f"✅ Repositório {repo_path} removido com sucesso!")
     except Exception as e:
@@ -232,6 +234,7 @@ def remove_readonly(func, path, _):
     """Função para remover arquivos somente leitura durante o processo de remoção."""
     os.chmod(path, stat.S_IWRITE)
     func(path)
+
 
 
 import matplotlib.pyplot as plt
