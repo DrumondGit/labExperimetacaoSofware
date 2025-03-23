@@ -45,7 +45,7 @@ jobs:
         run: |
           cd Lab02/ck-repo  # Navegar para o diretório do repositório clonado
           mvn clean package
-          
+
       - name: 🚀 Rodar Script de Métricas
         run: |
           python Lab02/src/main.py
