@@ -1,0 +1,39 @@
+name: Metrics Pipeline
+
+on: 
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Permite rodar manualmente pelo GitHub Actions
+
+jobs:
+  generate-metrics:
+    runs-on: ubuntu-latest  # Pode ser windows-latest se precisar de algo específico
+    environment: GITHUB_TOKEN
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🔄 Clonar repositório externo
+        run: git clone https://github.com/mauricioaniche/ck.git Lab02/ck-repo
+
+      - name: 🐍 Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'  # Use a versão que está rodando localmente
+
+      - name: 📦 Instalar Dependências Python
+        run: |
+          pip install json5 python-dotenv matplotlib pandas requests GitPython pygount
+
+      - name: 🚀 Rodar Script de Métricas
+        run: |
+          python Lab02/src/main.py
+        env:
+          API_URL: "https://api.github.com/graphql"
+          TOKEN: ${{ secrets.TOKEN }}
+          CK_REPO_URL: "${{ github.workspace }}/Lab02/ck-repo/ck-master" # Usando a variável diretamente

@@ -15,28 +15,32 @@ from pygount import ProjectSummary, SourceAnalysis
 
 import quality_metrics_adapter
 
+# Carregar variáveis de ambiente
 load_dotenv()
-token = os.getenv("GITHUB_TOKEN")
-github_URL = os.getenv("GITHUB_URL")
-ck_path = os.getenv("CK_REPO_PATH")
 
-if not token:
-    raise ValueError("Erro: O token do GitHub não foi encontrado. Verifique o arquivo .env.")
+# token = os.getenv("GITHUB_TOKEN")
+# github_URL = os.getenv("GITHUB_URL")
+# ck_path = os.getenv("CK_REPO_PATH")
+
+
+API_URL = os.environ.get("API_URL")
+TOKEN = os.environ.get("TOKEN")
+USERNAME = os.environ.get("GITHUB_USERNAME")
+ck_path = os.environ.get("CK_REPO_URL")
+GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
 
 headers = {
-    "Authorization": f"Bearer {token}",
+    "Authorization": f"Bearer {TOKEN}",
     "Content-Type": "application/json"
 }
-
-GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
 
 
 def fetchRepositories():
     """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
     allRepos = []
     cursor = None
-    totalRepos = 3  # Número total de repositórios desejado
-    batchSize = 3  # Repositórios por chamada
+    totalRepos = 100  # Número total de repositórios desejado
+    batchSize = 25  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
     for batch in range(numBatches):
@@ -93,8 +97,7 @@ def fetchRepositories():
                 pageInfo = data['data']['search']['pageInfo']
                 cursor = pageInfo["endCursor"] if pageInfo["hasNextPage"] else None
 
-                print(
-                    f"✅ Chamada {batch + 1}/{numBatches} concluída com sucesso! ({len(allRepos)}/{totalRepos} repositórios coletados)\n")
+                print(f"✅ Chamada {batch + 1}/{numBatches} concluída com sucesso! ({len(allRepos)}/{totalRepos} repositórios coletados)\n")
                 break
 
             else:
@@ -130,11 +133,33 @@ def processData(repositories):
     for repo in repositories:
         node = repo['node']
         repo_age = calculate_repos_age(node['createdAt'])
-        repo_url = f"{github_URL}{node['owner']['login']}/{node['name']}.git"
+
+        repo_url = f"{API_URL}{node['owner']['login']}/{node['name']}.git"
+
         clone_repo(current_dir, repo_url)
         repo_path = os.path.join("repo")
         cloned_repo_path = os.path.join(current_dir, "repo")
         output_path = os.path.join(repo_path, "ck_analysis/")
+        print(cloned_repo_path)
+        print("teste")
+        print(repo_path)
+
+        code_lines, comment_lines = count_lines(repo_path)
+        quality_metrics_adapter.run_ck(repo_path, output_path, ck_path)
+        quality_metrics = quality_metrics_adapter.summarize_ck_results(output_path)
+        remove_repo(cloned_repo_path)
+
+        repoList.append({
+            "Nome": node['name'],
+            "Proprietário": node['owner']['login'],
+            "Idade": f"{repo_age} anos",
+            "Estrelas": node['stargazerCount'],
+            "Pull Requests Aceitos": node['pullRequests']['totalCount'],
+            "Releases": node['releases']['totalCount'],
+            "Linhas de código": code_lines,
+            "Linhas de comentário": comment_lines,
+            **quality_metrics
+        })
 
         if os.path.exists(cloned_repo_path) and has_java_files(repo_path):
             code_lines, comment_lines = count_lines(repo_path)
@@ -164,12 +189,14 @@ def calculate_repos_age(creation_date):
     repo_age = repo_age_timezone.days / 325.25
     return round(float(repo_age), 1)
 
+
 def clone_repo(current_dir, repo_url):
     clone_path = os.path.join(current_dir, "repo")
     if not os.path.exists(clone_path):
         os.mkdir(clone_path)
 
     Repo.clone_from(repo_url, clone_path)
+
 
 def count_lines(repo_path):
     summary = ProjectSummary()
@@ -185,9 +212,11 @@ def count_lines(repo_path):
 
     return code_lines, comment_lines
 
+
 def remove_readonly(func, path, _):
     os.chmod(path, stat.S_IWRITE)
     func(path)
+
 
 def remove_repo(repo_path):
     try:
@@ -200,6 +229,7 @@ def remove_repo(repo_path):
     except Exception as e:
         print(f"⚠ Erro ao excluir repositório: {e}")
 
+
 def plotGraphs(df):
     """Gera gráficos com base nos dados coletados, mostrando apenas o top 10."""
     if df is None or df.empty:
@@ -208,22 +238,27 @@ def plotGraphs(df):
 
     fig, ax = plt.subplots()
 
+
     # Gráfico POPULARIDADE X MÉTRICAS DE QUALIDADE
     cbo = df['Média CBO (Classes)']
     dit = df['Média DIT (Classes)']
     lcom = df['Média LCOM (Classes)']
     popularidade = df['Estrelas'].tolist()
 
+
     ax.plot(popularidade, cbo, label='CBO')
     ax.plot(popularidade, dit, label='DIT')
     ax.plot(popularidade, lcom, label='LCOM')
 
+
     ax.set_xlabel('Popularidade (Quantidade de Estrelas)')
+
     ax.set_ylabel('Métricas de Qualidade')
     ax.set_title('Métricas de Qualidade vs Popularidade')
     ax.legend()
 
     plt.show()
+
 
     # Gráfico de pizza: Linguagens mais usadas (Top 10 repositórios)
     # languageCounts = df_top10["Linguagem Principal"].value_counts()
@@ -327,3 +362,4 @@ def plot_top_languages(df):
 
     # Exibir gráfico
     plt.show()
+
