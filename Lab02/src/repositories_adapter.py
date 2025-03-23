@@ -14,6 +14,7 @@ from git import Repo
 from pygount import ProjectSummary, SourceAnalysis
 
 import quality_metrics_adapter
+import argparse
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -36,11 +37,11 @@ headers = {
 # Limite máximo de caminho para Windows
 MAX_PATH_LENGTH = 260
 
-def fetchRepositories():
-    """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
+def fetchRepositories(start, end):
+    """Faz a requisição GraphQL com paginação para obter repositórios em intervalos definidos."""
     allRepos = []
     cursor = None
-    totalRepos = 300  # Número total de repositórios desejado
+    totalRepos = end - start  # Número total de repositórios desejado
     batchSize = 10  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
@@ -118,9 +119,7 @@ def is_educational(repo):
 def has_java_files(repo_path):
     print(f"Verificando arquivos em: {repo_path}")
     for root, _, files in os.walk(repo_path):
-        print(f"📂 Diretório: {root}")
         for file in files:
-            print(f"    📄 {file}")
             if file.endswith(".java"):
                 print("✅ Arquivo .java encontrado!")
                 return True
@@ -138,27 +137,23 @@ def processData(repositories):
         node = repo['node']
         repo_age = calculate_repos_age(node['createdAt'])
 
-        repo_name = node['name']  # Pegando o nome correto do repositório
-        if len(repo_name) > 100:  # Limite de 100 caracteres para o nome do repositório
+        repo_name = node['name']
+        if len(repo_name) > 100:  
             print(f"❌ Repositório {repo_name} ignorado (nome muito longo)")
             continue
         clean_name = clean_repo_name(repo_name)
 
         repo_url = f"https://github.com/{node['owner']['login']}/{clean_name}.git"
 
-        repo_owner = node['owner']['login']  # Nome do dono do repositório
+        repo_owner = node['owner']['login']  
         current_dir = os.getcwd()
         parent_path = os.path.dirname(current_dir)
-        print("Testeeeeeee")
-        print(parent_path)
-        repo_path = os.path.join(current_dir + "\labExperimetacaoSofware\\Lab02\src\\repo", clean_name)  # Definindo o caminho correto
+        repo_path = os.path.join(current_dir + "\\Lab02\\src\\repo", clean_name)
 
-        # Verifica o comprimento do caminho antes de clonar
-        
         clone_repo(repo_path, repo_url)  # Clonando para o caminho certo
 
-        output_path = os.path.join(current_dir  + "\labExperimetacaoSofware\\Lab02\src\\repo", clean_name)  # Definindo onde salvar os resultados do CK
-        output_path2 = os.path.join(current_dir  + "\labExperimetacaoSofware\\Lab02\src\\repo") 
+        output_path = os.path.join(current_dir  + "\\Lab02\\src\\repo", clean_name)
+        output_path2 = os.path.join(current_dir  + "\\Lab02\\src\\repo")
 
         if os.path.exists(output_path2) and has_java_files(repo_path):
             code_lines, comment_lines = count_lines(repo_path)
@@ -186,9 +181,8 @@ def processData(repositories):
 
 import re
 def clean_repo_name(repo_name):
-    # Substitui caracteres não seguros por '_', ou outro caractere de sua escolha
-    clean_name = re.sub(r'[^\w\s-]', '_', repo_name)  # Substitui qualquer caractere que não seja alfanumérico ou hífen/espaco
-    clean_name = clean_name.strip()  # Remove espaços em excesso
+    clean_name = re.sub(r'[^\w\s-]', '_', repo_name)  
+    clean_name = clean_name.strip()  
     return clean_name
 
 def calculate_repos_age(creation_date):
@@ -198,10 +192,10 @@ def calculate_repos_age(creation_date):
 
 def clone_repo(clone_path, repo_url):
     if os.path.exists(clone_path):
-        remove_repo(clone_path)  # Remove se já existir
+        remove_repo(clone_path)
 
     try:
-        Repo.clone_from(repo_url, clone_path)  # Clona para o caminho correto
+        Repo.clone_from(repo_url, clone_path)
     except Exception as e:
         print(f"⚠ Erro ao clonar o repositório: {e}")
 
@@ -228,37 +222,20 @@ def remove_repo(repo_path):
         print(f"⚠ Erro ao excluir repositório {repo_path}: {e}")
 
 def remove_readonly(func, path, _):
-    """Função para remover arquivos somente leitura durante o processo de remoção."""
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
-
-
-import matplotlib.pyplot as plt
-import io
-import base64
-import os
-
 def plotGraphs(df, output_dir='Lab02/reports'):
-    """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como SVG embutidos no HTML."""
-
-    # Criar diretório para salvar os gráficos, se não existir
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    # Definindo as métricas de qualidade
     metrics = ['Média CBO (Classes)', 'Média DIT (Classes)', 'Média LCOM (Classes)']
-    
-    # Lista para armazenar gráficos gerados
     graph_paths = []
 
-    # Configuração para criar múltiplos gráficos
     fig, axes = plt.subplots(2, len(metrics), figsize=(15, 10))
     fig.suptitle('Popularidade vs Métricas de Qualidade e Maturidade vs Métricas de Qualidade')
 
-    # Plotando os gráficos para cada métrica
     for i, metric in enumerate(metrics):
-        # Gráfico de Popularidade vs Métrica de Qualidade
         ax1 = axes[0, i]
         ax1.scatter(df['Estrelas'], df[metric], color='blue', alpha=0.5)
         ax1.set_title(f'Popularidade vs {metric}')
@@ -266,7 +243,6 @@ def plotGraphs(df, output_dir='Lab02/reports'):
         ax1.set_ylabel(metric)
         ax1.grid(True)
 
-        # Gráfico de Maturidade (Idade do Repositório) vs Métrica de Qualidade
         ax2 = axes[1, i]
         ax2.scatter(df['Idade'], df[metric], color='green', alpha=0.5)
         ax2.set_title(f'Maturidade vs {metric}')
@@ -274,28 +250,23 @@ def plotGraphs(df, output_dir='Lab02/reports'):
         ax2.set_ylabel(metric)
         ax2.grid(True)
 
-    # Salvar gráficos como SVG em memória
     for i in range(len(metrics)):
         svg_output = io.StringIO()
         fig.savefig(svg_output, format='svg')
-        svg_output.seek(0)  # Voltar ao início do arquivo
+        svg_output.seek(0)
 
-        # Codificar o conteúdo SVG para Base64
         svg_content = svg_output.getvalue()
         encoded_svg = base64.b64encode(svg_content.encode('utf-8')).decode('utf-8')
         
-        # Adicionar a tag de imagem SVG embutida no HTML
         graph_paths.append(f"data:image/svg+xml;base64,{encoded_svg}")
 
     plt.tight_layout()
     plt.subplots_adjust(top=0.9)
-    plt.close(fig)  # Fechar o gráfico para liberar memória
+    plt.close(fig)
 
     return graph_paths
 
-
 def generate_html_report(df, graphs, report_path='Lab02/reports/report.html'):
-    # Iniciar o conteúdo HTML
     html_content = """
     <html>
     <head>
@@ -331,7 +302,6 @@ def generate_html_report(df, graphs, report_path='Lab02/reports/report.html'):
             <tbody>
     """
     
-    # Adicionar as linhas da tabela com os dados do DataFrame
     for _, row in df.iterrows():
         html_content += f"""
         <tr>
@@ -349,13 +319,11 @@ def generate_html_report(df, graphs, report_path='Lab02/reports/report.html'):
         </tr>
         """
     
-    # Fechar a tabela
     html_content += """
             </tbody>
         </table>
     """
     
-    # Adicionar gráficos ao HTML (usando Base64 incorporado diretamente)
     html_content += "<h2>Gráficos</h2>"
     
     for i, graph in enumerate(graphs):
@@ -366,16 +334,10 @@ def generate_html_report(df, graphs, report_path='Lab02/reports/report.html'):
         </div>
         """
     
-    # Fechar o HTML
     html_content += """
     </body>
     </html>
     """
     
-    # Salvar o relatório no caminho especificado
     with open(report_path, 'w') as file:
         file.write(html_content)
-    
-    print(f"✅ Relatório gerado com sucesso: {report_path}")
-
-
