@@ -15,28 +15,31 @@ from pygount import ProjectSummary, SourceAnalysis
 
 import quality_metrics_adapter
 
-load_dotenv()
-token = os.getenv("GITHUB_TOKEN")
-github_URL = os.getenv("GITHUB_URL")
-ck_path = os.getenv("CK_REPO_PATH")
+# load_dotenv()
+# token = os.getenv("GITHUB_TOKEN")
+# github_SSH = os.getenv("GITHUB_SSH")
+# ck_path = os.getenv("CK_REPO_PATH")
 
-if not token:
-    raise ValueError("Erro: O token do GitHub não foi encontrado. Verifique o arquivo .env.")
+
+API_URL = os.environ.get("API_URL")
+TOKEN = os.environ.get("TOKEN")
+USERNAME = os.environ.get("GITHUB_USERNAME")
+ck_path = os.environ.get("CK_REPO_URL")
 
 headers = {
-    "Authorization": f"Bearer {token}",
+    "Authorization": f"Bearer {TOKEN}",
     "Content-Type": "application/json"
 }
 
-GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
+#GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
 
 
 def fetchRepositories():
     """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
     allRepos = []
     cursor = None
-    totalRepos = 3  # Número total de repositórios desejado
-    batchSize = 3  # Repositórios por chamada
+    totalRepos = 2  # Número total de repositórios desejado
+    batchSize = 1  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
     for batch in range(numBatches):
@@ -71,7 +74,7 @@ def fetchRepositories():
         """
 
         for attempt in range(3):
-            response = requests.post(GITHUB_GRAPHQL_URL, json={"query": query}, headers=headers)
+            response = requests.post(API_URL, json={"query": query}, headers=headers)
 
             if response.status_code == 200:
                 data = response.json()
@@ -135,6 +138,27 @@ def processData(repositories):
         repo_path = os.path.join("repo")
         cloned_repo_path = os.path.join(current_dir, "repo")
         output_path = os.path.join(repo_path, "ck_analysis/")
+        print(cloned_repo_path)
+        print("teste")
+        print(repo_path)
+    
+
+        code_lines, comment_lines = count_lines(repo_path)
+        quality_metrics_adapter.run_ck(repo_path, output_path, ck_path)
+        quality_metrics = quality_metrics_adapter.summarize_ck_results(output_path)
+        remove_repo(cloned_repo_path)
+
+        repoList.append({
+            "Nome": node['name'],
+            "Proprietário": node['owner']['login'],
+            "Idade": f"{repo_age} anos",
+            "Estrelas": node['stargazerCount'],
+            "Pull Requests Aceitos": node['pullRequests']['totalCount'],
+            "Releases": node['releases']['totalCount'],
+            "Linhas de código": code_lines,
+            "Linhas de comentário": comment_lines,
+            **quality_metrics
+        })
 
         if os.path.exists(cloned_repo_path) and has_java_files(repo_path):
             code_lines, comment_lines = count_lines(repo_path)
@@ -343,3 +367,28 @@ def plot_top_languages(df):
 
     # Exibir gráfico
     plt.show()
+
+
+def save_repo_metrics_to_csv(df, repo_name, output_dir="output"):
+    """Salva os dados de um repositório específico em um arquivo CSV."""
+    if df is None or df.empty:
+        print("⚠ Sem dados para salvar.")
+        return
+    
+    if repo_name not in df["Nome"].values:
+        print(f"⚠ Repositório '{repo_name}' não encontrado nos dados coletados.")
+        return
+    
+    # Filtrar os dados do repositório desejado
+    repo_data = df[df["Nome"] == repo_name]
+    
+    # Criar diretório de saída, se não existir
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Caminho do arquivo CSV
+    csv_path = os.path.join(output_dir, f"{repo_name}_metrics.csv")
+    
+    # Salvar em CSV
+    repo_data.to_csv(csv_path, index=False, encoding="utf-8-sig")
+    
+    print(f"✅ Dados do repositório '{repo_name}' salvos em: {csv_path}")

@@ -2,8 +2,8 @@ import pandas as pd
 
 import repositories_adapter
 
-# Run
 repositories = repositories_adapter.fetchRepositories()
+
 if repositories:
     df = repositories_adapter.processData(repositories)
     STATISTICS_CALCULATOR_VALUES = df[
