@@ -236,7 +236,7 @@ def remove_readonly(func, path, _):
 
 import os
 
-def plotGraphs(df, output_dir='graphs'):
+def plotGraphs(df, output_dir='Lab02/graphs'):
     """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como PNG."""
 
     # Criar diretório para salvar os gráficos, se não existir
@@ -268,7 +268,7 @@ def plotGraphs(df, output_dir='graphs'):
         ax2.set_ylabel(metric)
         ax2.grid(True)
 
-    # Salvar gráficos como PNGs
+    # Salvar gráficos como PNGs dentro de Lab02/graphs
     graph_paths = []
     for i in range(len(metrics)):
         graph_path = os.path.join(output_dir, f"graph_{i+1}.png")
@@ -280,6 +280,7 @@ def plotGraphs(df, output_dir='graphs'):
     plt.close(fig)  # Fechar o gráfico para liberar memória
 
     return graph_paths
+
 
 
 
