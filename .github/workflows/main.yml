@@ -44,7 +44,7 @@ jobs:
       - name: 🚀 Rodar Maven no CK Repo
         run: |
           cd Lab02/ck-repo  # Navegar para o diretório do repositório clonado
-          mvn clean install -U  # Rodar o comando Maven para buildar o projeto com a opção -U
+          mvn clean package
           
       - name: 🚀 Rodar Script de Métricas
         run: |
@@ -52,4 +52,4 @@ jobs:
         env:
           API_URL: "https://api.github.com/graphql"
           TOKEN: ${{ secrets.TOKEN }}
-          CK_REPO_URL: ${{ secrets.CK_REPO_URL }}  # Usando a variável diretamente
+          CK_REPO_URL: ck-repo/ck-master/  # Usando a variável diretamente
