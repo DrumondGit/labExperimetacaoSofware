@@ -154,9 +154,6 @@ def processData(repositories):
         repo_path = os.path.join(current_dir + "\labExperimetacaoSofware\\Lab02\src\\repo", clean_name)  # Definindo o caminho correto
 
         # Verifica o comprimento do caminho antes de clonar
-        if len(repo_path) > MAX_PATH_LENGTH:
-            print(f"❌ Caminho do repositório {repo_name} é muito longo, ignorando...")
-            continue
         
         clone_repo(repo_path, repo_url)  # Clonando para o caminho certo
 
