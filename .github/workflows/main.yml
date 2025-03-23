@@ -37,3 +37,9 @@ jobs:
           API_URL: "https://api.github.com/graphql"
           TOKEN: ${{ secrets.TOKEN }}
           CK_REPO_URL: "${{ github.workspace }}/Lab02/ck-repo/ck-master" # Usando a variável diretamente
+
+      - name: 📑 Gerar Artefato do Relatório
+        uses: actions/upload-artifact@v3
+        with:
+          name: report
+          path: Lab02/report.html
