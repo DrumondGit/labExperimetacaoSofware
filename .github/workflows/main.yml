@@ -52,4 +52,4 @@ jobs:
         env:
           API_URL: "https://api.github.com/graphql"
           TOKEN: ${{ secrets.TOKEN }}
-          CK_REPO_PATH: Lab02/ck-repo/ck-master/ # Usando a variável diretamente
+          CK_REPO_URL: "${{ github.workspace }}/Lab02/ck-repo/ck-master" # Usando a variável diretamente
