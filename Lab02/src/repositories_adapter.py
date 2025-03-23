@@ -15,10 +15,11 @@ from pygount import ProjectSummary, SourceAnalysis
 
 import quality_metrics_adapter
 
-load_dotenv()
+# load_dotenv()
 # token = os.getenv("GITHUB_TOKEN")
 # github_SSH = os.getenv("GITHUB_SSH")
 # ck_path = os.getenv("CK_REPO_PATH")
+
 
 API_URL = os.environ.get("API_URL")
 TOKEN = os.environ.get("TOKEN")
@@ -132,7 +133,7 @@ def processData(repositories):
     for repo in repositories:
         node = repo['node']
         repo_age = calculate_repos_age(node['createdAt'])
-        repo_url = f"https://github.com/{node['owner']['login']}/{node['name']}.git"
+        repo_url = f"{github_URL}{node['owner']['login']}/{node['name']}.git"
         clone_repo(current_dir, repo_url)
         repo_path = os.path.join("repo")
         cloned_repo_path = os.path.join(current_dir, "repo")
@@ -159,6 +160,26 @@ def processData(repositories):
             **quality_metrics
         })
 
+        if os.path.exists(cloned_repo_path) and has_java_files(repo_path):
+            code_lines, comment_lines = count_lines(repo_path)
+            quality_metrics_adapter.run_ck(repo_path, output_path, ck_path)
+            quality_metrics = quality_metrics_adapter.summarize_ck_results(output_path)
+            remove_repo(cloned_repo_path)
+
+            repoList.append({
+                "Nome": node['name'],
+                "Proprietário": node['owner']['login'],
+                "Idade": f"{repo_age} anos",
+                "Estrelas": node['stargazerCount'],
+                "Pull Requests Aceitos": node['pullRequests']['totalCount'],
+                "Releases": node['releases']['totalCount'],
+                "Linhas de código": code_lines,
+                "Linhas de comentário": comment_lines,
+                **quality_metrics
+            })
+        else:
+            print(f"❌ Repositório {node['name']} ignorado (não contém arquivos .java)")
+            remove_repo(repo_path)
 
     return pd.DataFrame(repoList)
 
@@ -210,68 +231,87 @@ def plotGraphs(df):
         print("⚠ Sem dados suficientes para gerar gráficos.")
         return
 
-    plt.rcParams.update({'font.size': 10})
+    fig, ax = plt.subplots()
 
-    # Selecionar apenas o top 10 por estrelas
-    df_top10 = df.sort_values(by="Estrelas", ascending=False).head(10)
+    # Gráfico MATURIDADE X MÉTRICAS DE QUALIDADE
+    cbo = df['Média CBO (Classes)']
+    dit = df['Média DIT (Classes)']
+    lcom = df['Média LCOM (Classes)']
+    popularidade = df['Idade'].tolist()
 
-    # Gráfico de barras: Estrelas por repositório (Top 10)
-    plt.figure(figsize=(12, 6))
-    plt.barh(df_top10["Nome"], df_top10["Estrelas"], color="skyblue")
-    plt.xlabel("Número de Estrelas")
-    plt.ylabel("Repositório")
-    plt.title("Top 10 Repositórios por Número de Estrelas")
-    plt.gca().invert_yaxis()
-    plt.tight_layout()
+    ax.plot(popularidade, cbo, label='CBO')
+    ax.plot(popularidade, dit, label='DIT')
+    ax.plot(popularidade, lcom, label='LCOM')
+
+    ax.set_xlabel('Maturidade (Idade dos repositórios)')
+    ax.set_ylabel('Métricas de Qualidade')
+    ax.set_title('Métricas de Qualidade vs Popularidade')
+    ax.legend()
+
     plt.show()
 
-    # Gráfico de pizza: Linguagens mais usadas (Top 10 repositórios)
-    languageCounts = df_top10["Linguagem Principal"].value_counts()
-    plt.figure(figsize=(8, 8))
-    languageCounts.plot(kind="pie", autopct="%1.1f%%", startangle=140, cmap="Set3")
-    plt.title("Distribuição das Linguagens de Programação (Top 10 Repositórios)")
-    plt.ylabel("")
-    plt.tight_layout()
-    plt.show()
-
-    # Gráfico de dispersão: PRs x Issues (Top 10 repositórios)
-    plt.figure(figsize=(8, 6))
-    plt.scatter(df_top10["Pull Requests Aceitos"], df_top10["Total de Issues Abertas"], color="orange", alpha=0.7)
-    plt.xlabel("Pull Requests Aceitos")
-    plt.ylabel("Total de Issues")
-    plt.title("Pull Requests Aceitos vs Total de Issues (Top 10 Repositórios)")
-    plt.tight_layout()
-    plt.show()
-
-    # ======= NOVO: Análise das Linguagens mais populares =======
-    top_languages = df["Linguagem Principal"].value_counts().head(10)
-
-    print("\n==================== Linguagens Mais Populares ====================\n")
-    print(top_languages.to_string(header=False))
-
-    plt.figure(figsize=(10, 5))
-    top_languages.sort_values().plot(kind='barh', color='royalblue')
-    plt.xlabel("Número de Repositórios")
-    plt.ylabel("Linguagem")
-    plt.title("Top 10 Linguagens Mais Utilizadas")
-    plt.grid(axis='x', linestyle='--', alpha=0.7)
-    plt.show()
-
-    # Gráfico de barras agrupadas por linguagem
-    top_languages = df["Linguagem Principal"].value_counts().head(5).index
-    df_lang = df[df["Linguagem Principal"].isin(top_languages)]
-    df_metrics = df_lang.groupby("Linguagem Principal")[["Pull Requests Aceitos", "Releases"]].sum()
-    df_metrics["Dias Desde Última Atualização"] = (pd.to_datetime("today") - pd.to_datetime(df_lang.groupby("Linguagem Principal")["Última Atualização"].max()).dt.tz_localize(None)).dt.days
-
-
-    df_metrics.plot(kind='bar', figsize=(10, 6), colormap='viridis')
-    plt.title("Métricas por Linguagem Popular")
-    plt.ylabel("Quantidade")
-    plt.xlabel("Linguagem")
-    plt.xticks(rotation=45)
-    plt.legend(["PR Aceitos", "Releases", "Dias Desde Última Atualização"])
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.show()
+    # plt.rcParams.update({'font.size': 10})
+    #
+    # # Selecionar apenas o top 10 por estrelas
+    # df_top10 = df.sort_values(by="Estrelas", ascending=False).head(10)
+    #
+    # # Gráfico de barras: Estrelas por repositório (Top 10)
+    # plt.figure(figsize=(12, 6))
+    # plt.barh(df_top10["Nome"], df_top10["Estrelas"], color="skyblue")
+    # plt.xlabel("Número de Estrelas")
+    # plt.ylabel("Repositório")
+    # plt.title("Top 10 Repositórios por Número de Estrelas")
+    # plt.gca().invert_yaxis()
+    # plt.tight_layout()
+    # plt.show()
+    #
+    # # Gráfico de pizza: Linguagens mais usadas (Top 10 repositórios)
+    # languageCounts = df_top10["Linguagem Principal"].value_counts()
+    # plt.figure(figsize=(8, 8))
+    # languageCounts.plot(kind="pie", autopct="%1.1f%%", startangle=140, cmap="Set3")
+    # plt.title("Distribuição das Linguagens de Programação (Top 10 Repositórios)")
+    # plt.ylabel("")
+    # plt.tight_layout()
+    # plt.show()
+    #
+    # # Gráfico de dispersão: PRs x Issues (Top 10 repositórios)
+    # plt.figure(figsize=(8, 6))
+    # plt.scatter(df_top10["Pull Requests Aceitos"], df_top10["Total de Issues Abertas"], color="orange", alpha=0.7)
+    # plt.xlabel("Pull Requests Aceitos")
+    # plt.ylabel("Total de Issues")
+    # plt.title("Pull Requests Aceitos vs Total de Issues (Top 10 Repositórios)")
+    # plt.tight_layout()
+    # plt.show()
+    #
+    # # ======= NOVO: Análise das Linguagens mais populares =======
+    # top_languages = df["Linguagem Principal"].value_counts().head(10)
+    #
+    # print("\n==================== Linguagens Mais Populares ====================\n")
+    # print(top_languages.to_string(header=False))
+    #
+    # plt.figure(figsize=(10, 5))
+    # top_languages.sort_values().plot(kind='barh', color='royalblue')
+    # plt.xlabel("Número de Repositórios")
+    # plt.ylabel("Linguagem")
+    # plt.title("Top 10 Linguagens Mais Utilizadas")
+    # plt.grid(axis='x', linestyle='--', alpha=0.7)
+    # plt.show()
+    #
+    # # Gráfico de barras agrupadas por linguagem
+    # top_languages = df["Linguagem Principal"].value_counts().head(5).index
+    # df_lang = df[df["Linguagem Principal"].isin(top_languages)]
+    # df_metrics = df_lang.groupby("Linguagem Principal")[["Pull Requests Aceitos", "Releases"]].sum()
+    # df_metrics["Dias Desde Última Atualização"] = (pd.to_datetime("today") - pd.to_datetime(df_lang.groupby("Linguagem Principal")["Última Atualização"].max()).dt.tz_localize(None)).dt.days
+    #
+    #
+    # df_metrics.plot(kind='bar', figsize=(10, 6), colormap='viridis')
+    # plt.title("Métricas por Linguagem Popular")
+    # plt.ylabel("Quantidade")
+    # plt.xlabel("Linguagem")
+    # plt.xticks(rotation=45)
+    # plt.legend(["PR Aceitos", "Releases", "Dias Desde Última Atualização"])
+    # plt.grid(axis='y', linestyle='--', alpha=0.7)
+    # plt.show()
 
 
 
