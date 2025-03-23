@@ -237,7 +237,7 @@ def remove_readonly(func, path, _):
 import os
 
 def plotGraphs(df, output_dir='Lab02/reports'):
-    """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como PNG."""
+    """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como SVG."""
 
     # Criar diretório para salvar os gráficos, se não existir
     if not os.path.exists(output_dir):
@@ -268,11 +268,11 @@ def plotGraphs(df, output_dir='Lab02/reports'):
         ax2.set_ylabel(metric)
         ax2.grid(True)
 
-    # Salvar gráficos como PNGs dentro de Lab02/graphs
+    # Salvar gráficos como SVGs dentro de Lab02/graphs
     graph_paths = []
     for i in range(len(metrics)):
-        graph_path = os.path.join(output_dir, f"graph_{i+1}.png")
-        fig.savefig(graph_path)
+        graph_path = os.path.join(output_dir, f"graph_{i+1}.svg")
+        fig.savefig(graph_path, format='svg')  # Salva em formato SVG
         graph_paths.append(graph_path)
 
     plt.tight_layout()
@@ -345,27 +345,25 @@ def generate_html_report(df, graphs, report_path='Lab02/reports/report.html'):
         </table>
     """
     
-    # Adicionar gráficos ao HTML (supondo que 'graphs' seja uma lista de caminhos de arquivos de gráficos gerados)
-    html_content += "<h2>Gráficos</h2>"
-    
-    for i, graph_path in enumerate(graphs):
+    # Adiciona os gráficos SVG no HTML
+    for i, graph_path in enumerate(graph_paths):
+        # Adiciona cada gráfico SVG como uma imagem no HTML
         html_content += f"""
-        <div class="graph">
-            <h3>Gráfico {i + 1}</h3>
-            <img src="Lab02/reports/graph_1.png" alt="Gráfico {i + 1}">
-        </div>
+        <h2>Gráfico {i+1}</h2>
+        <img src="{graph_path}" alt="Gráfico {i+1}" width="600">
+        <br>
         """
-    
-    # Fechar o HTML
+
+    # Finaliza o conteúdo HTML
     html_content += """
     </body>
     </html>
     """
-    
-    # Salvar o relatório no caminho especificado
-    with open(report_path, 'w') as file:
+
+    # Salva o conteúdo HTML em um arquivo
+    with open(output_html, 'w') as file:
         file.write(html_content)
-    
-    print(f"✅ Relatório gerado com sucesso: {report_path}")
+
+    print(f"Relatório gerado em: {output_html}")
 
 
