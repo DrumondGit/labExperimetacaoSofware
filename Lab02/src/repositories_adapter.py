@@ -41,7 +41,7 @@ def fetchRepositories():
     allRepos = []
     cursor = None
     totalRepos = 100  # Número total de repositórios desejado
-    batchSize = 25  # Repositórios por chamada
+    batchSize = 10  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
     for batch in range(numBatches):
