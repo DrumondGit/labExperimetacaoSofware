@@ -18,15 +18,15 @@ import quality_metrics_adapter
 # Carregar variáveis de ambiente
 load_dotenv()
 
-# token = os.getenv("GITHUB_TOKEN")
-# github_URL = os.getenv("GITHUB_URL")
-# ck_path = os.getenv("CK_REPO_PATH")
+TOKEN = os.getenv("GITHUB_TOKEN")
+API_URL = os.getenv("GITHUB_API_URL")
+ck_path = os.getenv("CK_REPO_PATH")
 
 
-API_URL = os.environ.get("API_URL")
-TOKEN = os.environ.get("TOKEN")
-USERNAME = os.environ.get("GITHUB_USERNAME")
-ck_path = os.environ.get("CK_REPO_URL")
+# API_URL = os.environ.get("API_URL")
+# TOKEN = os.environ.get("TOKEN")
+# USERNAME = os.environ.get("GITHUB_USERNAME")
+# ck_path = os.environ.get("CK_REPO_URL")
 GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
 
 headers = {
@@ -39,8 +39,8 @@ def fetchRepositories():
     """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
     allRepos = []
     cursor = None
-    totalRepos = 100  # Número total de repositórios desejado
-    batchSize = 25  # Repositórios por chamada
+    totalRepos = 5  # Número total de repositórios desejado
+    batchSize = 1  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
     for batch in range(numBatches):
@@ -117,10 +117,17 @@ def is_educational(repo):
 
 
 def has_java_files(repo_path):
+    print(f"Verificando arquivos em: {repo_path}")
     for root, _, files in os.walk(repo_path):
-        if any(file.endswith(".java") for file in files):
-            return True
+        print(f"📂 Diretório: {root}")
+        for file in files:
+            print(f"    📄 {file}")
+            if file.endswith(".java"):
+                print("✅ Arquivo .java encontrado!")
+                return True
+    print("❌ Nenhum arquivo .java encontrado.")
     return False
+
 
 
 def processData(repositories):
@@ -137,31 +144,18 @@ def processData(repositories):
         repo_url = f"https://github.com/{node['owner']['login']}/{node['name']}.git"
 
         clone_repo(current_dir, repo_url)
+        
         repo_path = os.path.join("repo")
-        cloned_repo_path = os.path.join(current_dir, "repo")
-        output_path = os.path.join(repo_path, "ck_analysis/")
-        print(cloned_repo_path)
-        print("teste")
-        print(repo_path)
-
-        code_lines, comment_lines = count_lines(repo_path)
-        quality_metrics_adapter.run_ck(repo_path, output_path, ck_path)
-        quality_metrics = quality_metrics_adapter.summarize_ck_results(output_path)
-        remove_repo(cloned_repo_path)
-
-        repoList.append({
-            "Nome": node['name'],
-            "Proprietário": node['owner']['login'],
-            "Idade": f"{repo_age} anos",
-            "Estrelas": node['stargazerCount'],
-            "Pull Requests Aceitos": node['pullRequests']['totalCount'],
-            "Releases": node['releases']['totalCount'],
-            "Linhas de código": code_lines,
-            "Linhas de comentário": comment_lines,
-            **quality_metrics
-        })
+        removed = repo_path
+        cloned_repo_path = os.path.join(repo_path, "repo_name")
+        if not os.path.exists(cloned_repo_path):
+            subprocess.run(["git", "clone", repo_url, cloned_repo_path])
+        output_path = os.path.join(cloned_repo_path, "ck_analysis/")
+        print("passou aqui")
+        print(output_path)
 
         if os.path.exists(cloned_repo_path) and has_java_files(repo_path):
+            
             code_lines, comment_lines = count_lines(repo_path)
             quality_metrics_adapter.run_ck(repo_path, output_path, ck_path)
             quality_metrics = quality_metrics_adapter.summarize_ck_results(output_path)
@@ -181,6 +175,10 @@ def processData(repositories):
         else:
             print(f"❌ Repositório {node['name']} ignorado (não contém arquivos .java)")
 
+        
+    remove_repo(cloned_repo_path)
+    
+
     return pd.DataFrame(repoList)
 
 
@@ -193,6 +191,9 @@ def calculate_repos_age(creation_date):
 def clone_repo(current_dir, repo_url):
     clone_path = os.path.join(current_dir, "repo")
     if not os.path.exists(clone_path):
+        os.mkdir(clone_path)
+    else:
+        remove_repo(clone_path)
         os.mkdir(clone_path)
 
     Repo.clone_from(repo_url, clone_path)
@@ -212,154 +213,60 @@ def count_lines(repo_path):
 
     return code_lines, comment_lines
 
+def remove_repo(repo_path):
+    print("passou aqui no remove repoooooooooo")
+    """Remove o repositório da pasta 'repo'."""
+    try:
+        # Rodar o comando de garbage collection do git para limpar o repositório, se necessário
+        subprocess.run(["git", "gc", "--prune=now"], cwd=repo_path, check=True)
+    except Exception as e:
+        print(f"⚠ Erro ao rodar git gc no repositório {repo_path}: {e}")
+
+    try:
+        # Remover o repositório (diretório) usando shutil.rmtree
+        shutil.rmtree(repo_path, onerror=remove_readonly)
+        print(f"✅ Repositório {repo_path} removido com sucesso!")
+    except Exception as e:
+        print(f"⚠ Erro ao excluir repositório {repo_path}: {e}")
 
 def remove_readonly(func, path, _):
+    """Função para remover arquivos somente leitura durante o processo de remoção."""
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
 
-def remove_repo(repo_path):
-    try:
-        subprocess.run(["git", "gc", "--prune=now"], cwd=repo_path, check=True)
-    except Exception as e:
-        print(f"⚠ Erro ao liberar repositório: {e}")
-
-    try:
-        shutil.rmtree(repo_path, onerror=remove_readonly)
-    except Exception as e:
-        print(f"⚠ Erro ao excluir repositório: {e}")
-
-
 def plotGraphs(df):
-    """Gera gráficos com base nos dados coletados, mostrando apenas o top 10."""
-    if df is None or df.empty:
-        print("⚠ Sem dados suficientes para gerar gráficos.")
-        return
+    """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade."""
+    
+    # Definindo as métricas de qualidade
+    metrics = ['Média CBO (Classes)', 'Média DIT (Classes)', 'Média LCOM (Classes)']
+    
+    # Configuração para criar múltiplos gráficos
+    fig, axes = plt.subplots(2, len(metrics), figsize=(15, 10))
+    fig.suptitle('Popularidade vs Métricas de Qualidade e Maturidade vs Métricas de Qualidade')
 
-    fig, ax = plt.subplots()
+    # Plotando os gráficos para cada métrica
+    for i, metric in enumerate(metrics):
+        # Gráfico de Popularidade vs Métrica de Qualidade
+        ax1 = axes[0, i]
+        ax1.scatter(df['Estrelas'], df[metric], color='blue', alpha=0.5)
+        ax1.set_title(f'Popularidade vs {metric}')
+        ax1.set_xlabel('Estrelas')
+        ax1.set_ylabel(metric)
+        ax1.grid(True)
 
+        # Gráfico de Maturidade (Idade do Repositório) vs Métrica de Qualidade
+        ax2 = axes[1, i]
+        ax2.scatter(df['Idade'], df[metric], color='green', alpha=0.5)
+        ax2.set_title(f'Maturidade vs {metric}')
+        ax2.set_xlabel('Idade (anos)')
+        ax2.set_ylabel(metric)
+        ax2.grid(True)
 
-    # Gráfico POPULARIDADE X MÉTRICAS DE QUALIDADE
-    cbo = df['Média CBO (Classes)']
-    dit = df['Média DIT (Classes)']
-    lcom = df['Média LCOM (Classes)']
-    popularidade = df['Estrelas'].tolist()
-
-
-    ax.plot(popularidade, cbo, label='CBO')
-    ax.plot(popularidade, dit, label='DIT')
-    ax.plot(popularidade, lcom, label='LCOM')
-
-
-    ax.set_xlabel('Popularidade (Quantidade de Estrelas)')
-
-    ax.set_ylabel('Métricas de Qualidade')
-    ax.set_title('Métricas de Qualidade vs Popularidade')
-    ax.legend()
-
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.9)
     plt.show()
 
 
-    # Gráfico de pizza: Linguagens mais usadas (Top 10 repositórios)
-    # languageCounts = df_top10["Linguagem Principal"].value_counts()
-    # plt.figure(figsize=(8, 8))
-    # languageCounts.plot(kind="pie", autopct="%1.1f%%", startangle=140, cmap="Set3")
-    # plt.title("Distribuição das Linguagens de Programação (Top 10 Repositórios)")
-    # plt.ylabel("")
-    # plt.tight_layout()
-    # plt.show()
-    #
-    # # Gráfico de dispersão: PRs x Issues (Top 10 repositórios)
-    # plt.figure(figsize=(8, 6))
-    # plt.scatter(df_top10["Pull Requests Aceitos"], df_top10["Total de Issues Abertas"], color="orange", alpha=0.7)
-    # plt.xlabel("Pull Requests Aceitos")
-    # plt.ylabel("Total de Issues")
-    # plt.title("Pull Requests Aceitos vs Total de Issues (Top 10 Repositórios)")
-    # plt.tight_layout()
-    # plt.show()
-    #
-    # # ======= NOVO: Análise das Linguagens mais populares =======
-    # top_languages = df["Linguagem Principal"].value_counts().head(10)
-    #
-    # print("\n==================== Linguagens Mais Populares ====================\n")
-    # print(top_languages.to_string(header=False))
-    #
-    # plt.figure(figsize=(10, 5))
-    # top_languages.sort_values().plot(kind='barh', color='royalblue')
-    # plt.xlabel("Número de Repositórios")
-    # plt.ylabel("Linguagem")
-    # plt.title("Top 10 Linguagens Mais Utilizadas")
-    # plt.grid(axis='x', linestyle='--', alpha=0.7)
-    # plt.show()
-    #
-    # # Gráfico de barras agrupadas por linguagem
-    # top_languages = df["Linguagem Principal"].value_counts().head(5).index
-    # df_lang = df[df["Linguagem Principal"].isin(top_languages)]
-    # df_metrics = df_lang.groupby("Linguagem Principal")[["Pull Requests Aceitos", "Releases"]].sum()
-    # df_metrics["Dias Desde Última Atualização"] = (pd.to_datetime("today") - pd.to_datetime(df_lang.groupby("Linguagem Principal")["Última Atualização"].max()).dt.tz_localize(None)).dt.days
-    #
-    #
-    # df_metrics.plot(kind='bar', figsize=(10, 6), colormap='viridis')
-    # plt.title("Métricas por Linguagem Popular")
-    # plt.ylabel("Quantidade")
-    # plt.xlabel("Linguagem")
-    # plt.xticks(rotation=45)
-    # plt.legend(["PR Aceitos", "Releases", "Dias Desde Última Atualização"])
-    # plt.grid(axis='y', linestyle='--', alpha=0.7)
-    # plt.show()
 
-
-
-def printLanguageStats(df):
-    """Exibe uma tabela com as 10 linguagens mais populares, média de PRs aceitos, média de releases e média de dias desde a última atualização."""
-    if df is None or df.empty:
-        print("⚠ Sem dados suficientes para análise.")
-        return
-
-    # Converter a coluna de data para datetime
-    df["Última Atualização"] = pd.to_datetime(df["Última Atualização"])
-    df["Dias Desde Última Atualização"] = (pd.to_datetime("today", utc=True) - df["Última Atualização"]).dt.total_seconds() / (60 * 60 * 24)
-
-
-    # Filtrar as 10 linguagens mais populares
-    top_languages = df["Linguagem Principal"].value_counts().head(10).index
-    df_top_languages = df[df["Linguagem Principal"].isin(top_languages)]
-
-    # Agrupar por linguagem e calcular médias
-    df_stats = df_top_languages.groupby("Linguagem Principal").agg(
-        Média_PRs_Aceitos=("Pull Requests Aceitos", "mean"),
-        Média_Releases=("Releases", "mean"),
-        Média_Dias_Desde_Última_Atualização=("Dias Desde Última Atualização", "mean")
-    ).round(2)
-
-    # Exibir a tabela
-    print("\n==================== Estatísticas das 10 Linguagens Mais Populares ====================\n")
-    print(df_stats)
-
-    return df_stats
-
-def plot_top_languages(df):
-    """Gera um gráfico com as 10 linguagens mais populares nos repositórios coletados."""
-    if df is None or df.empty:
-        print("⚠ Sem dados suficientes para gerar gráficos.")
-        return
-
-    # Contar as ocorrências das linguagens e pegar o top 10
-    top_languages = df["Linguagem Principal"].value_counts().head(10)
-
-    # Criando o gráfico
-    plt.figure(figsize=(12, 6))
-    top_languages.sort_values().plot(kind='barh', color='royalblue', edgecolor='black')
-
-    # Adicionando rótulos e título
-    plt.xlabel("Número de Repositórios")
-    plt.ylabel("Linguagem")
-    plt.title("Top 10 Linguagens Mais Utilizadas nos Repositórios do GitHub")
-
-    # Melhorando a legibilidade
-    plt.grid(axis='x', linestyle='--', alpha=0.7)
-    plt.gca().invert_yaxis()
-
-    # Exibir gráfico
-    plt.show()
 
