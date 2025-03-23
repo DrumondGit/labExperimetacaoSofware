@@ -236,7 +236,7 @@ def remove_readonly(func, path, _):
 
 import os
 
-def plotGraphs(df, output_dir='Lab02/graphs'):
+def plotGraphs(df, output_dir='Lab02/reports'):
     """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como PNG."""
 
     # Criar diretório para salvar os gráficos, se não existir
@@ -284,7 +284,7 @@ def plotGraphs(df, output_dir='Lab02/graphs'):
 
 
 
-def generate_html_report(df, graphs, report_path='Lab02/report.html'):
+def generate_html_report(df, graphs, report_path='Lab02/reports/report.html'):
     # Iniciar o conteúdo HTML
     html_content = """
     <html>
