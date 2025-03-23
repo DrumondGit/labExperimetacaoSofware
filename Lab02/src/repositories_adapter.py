@@ -40,8 +40,8 @@ def fetchRepositories():
     """Faz a requisição GraphQL com paginação para obter 100 repositórios em 4 chamadas de 25."""
     allRepos = []
     cursor = None
-    totalRepos = 1000  # Número total de repositórios desejado
-    batchSize = 1  # Repositórios por chamada
+    totalRepos = 100  # Número total de repositórios desejado
+    batchSize = 25  # Repositórios por chamada
     numBatches = totalRepos // batchSize  # Total de chamadas necessárias
 
     for batch in range(numBatches):
