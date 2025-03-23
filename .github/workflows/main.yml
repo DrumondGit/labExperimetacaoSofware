@@ -38,8 +38,9 @@ jobs:
           TOKEN: ${{ secrets.TOKEN }}
           CK_REPO_URL: "${{ github.workspace }}/Lab02/ck-repo/ck-master" # Usando a variável diretamente
 
-      - name: 📑 Gerar Artefato do Relatório
-        uses: actions/upload-artifact@v2
+      - name: 📸 Salvar report
+        uses: actions/upload-artifact@v3
         with:
           name: report
-          path: Lab02/report.html
+          path: |
+            Lab02/report.html
