@@ -234,6 +234,8 @@ def remove_readonly(func, path, _):
     func(path)
 
 
+import os
+
 def plotGraphs(df, output_dir='Lab02/reports'):
     """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como PNG."""
 
@@ -266,25 +268,23 @@ def plotGraphs(df, output_dir='Lab02/reports'):
         ax2.set_ylabel(metric)
         ax2.grid(True)
 
-        # Salvar gráficos como SVGs dentro de Lab02/graphs
-        graph_paths = []
-        for i in range(len(metrics)):
-            # Alterando a extensão de '.png' para '.svg'
-            graph_path = os.path.join(output_dir, f"graph_{i+1}.svg")
-            fig.savefig(graph_path, format='svg')  # Especificando o formato como 'svg'
-            graph_paths.append(graph_path)
+    # Salvar gráficos como PNGs dentro de Lab02/graphs
+    graph_paths = []
+    for i in range(len(metrics)):
+        graph_path = os.path.join(output_dir, f"graph_{i+1}.png")
+        fig.savefig(graph_path)
+        graph_paths.append(graph_path)
 
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.9)
-        plt.close(fig)  # Fechar o gráfico para liberar memória
-
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.9)
+    plt.close(fig)  # Fechar o gráfico para liberar memória
 
     return graph_paths
 
 
 
 
-def generate_html_report(df, graphs, report_path='Lab02/report/report.html'):
+def generate_html_report(df, graphs, report_path='Lab02/reports/report.html'):
     # Iniciar o conteúdo HTML
     html_content = """
     <html>
@@ -347,15 +347,14 @@ def generate_html_report(df, graphs, report_path='Lab02/report/report.html'):
     
     # Adicionar gráficos ao HTML (supondo que 'graphs' seja uma lista de caminhos de arquivos de gráficos gerados)
     html_content += "<h2>Gráficos</h2>"
-
+    
     for i, graph_path in enumerate(graphs):
         html_content += f"""
         <div class="graph">
             <h3>Gráfico {i + 1}</h3>
-            <object type="image/svg+xml" data="{graph_path}" alt="Gráfico {i + 1}"></object>
+            <img src="{graph_path}" alt="Gráfico {i + 1}">
         </div>
         """
-
     
     # Fechar o HTML
     html_content += """
