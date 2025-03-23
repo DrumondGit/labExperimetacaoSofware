@@ -236,7 +236,7 @@ def remove_readonly(func, path, _):
 
 import os
 
-def plotGraphs(df, output_dir='Lab02/reports'):
+def plotGraphs(df, output_dir='Lab02/graphs'):
     """Gera gráficos de popularidade x métricas de qualidade e maturidade x métricas de qualidade e os salva como SVG."""
 
     # Criar diretório para salvar os gráficos, se não existir
