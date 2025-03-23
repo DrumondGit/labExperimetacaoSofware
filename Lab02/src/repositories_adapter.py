@@ -18,9 +18,9 @@ import quality_metrics_adapter
 # Carregar variáveis de ambiente
 load_dotenv()
 
-#TOKEN = os.getenv("GITHUB_TOKEN")
-#API_URL = os.getenv("GITHUB_API_URL")
-#ck_path = os.getenv("CK_REPO_PATH")
+# TOKEN = os.getenv("GITHUB_TOKEN")
+# API_URL = os.getenv("GITHUB_API_URL")
+# ck_path = os.getenv("CK_REPO_PATH")
 
 API_URL = os.environ.get("API_URL")
 TOKEN = os.environ.get("TOKEN")
@@ -139,9 +139,9 @@ def processData(repositories):
         repo_age = calculate_repos_age(node['createdAt'])
 
         repo_name = node['name']  # Pegando o nome correto do repositório
-        # if len(repo_name) > 100:  # Limite de 100 caracteres para o nome do repositório
-        #     print(f"❌ Repositório {repo_name} ignorado (nome muito longo)")
-        #     continue
+        if len(repo_name) > 100:  # Limite de 100 caracteres para o nome do repositório
+            print(f"❌ Repositório {repo_name} ignorado (nome muito longo)")
+            continue
         clean_name = clean_repo_name(repo_name)
 
         repo_url = f"https://github.com/{node['owner']['login']}/{clean_name}.git"
