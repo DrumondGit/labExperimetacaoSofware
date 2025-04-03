@@ -1,12 +1,12 @@
 name: Metrics Pipeline
 
-on: 
+#on: 
   push:
     branches:
-      - main
+      #- main
   pull_request:
     branches:
-      - main
+      #- main
   workflow_dispatch:  # Permite rodar manualmente pelo GitHub Actions
 
 jobs:
