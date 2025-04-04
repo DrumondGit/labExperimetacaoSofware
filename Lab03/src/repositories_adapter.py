@@ -35,12 +35,10 @@ def make_github_request(query, max_retries=5):
             break
     return None
 
-def fetch_repositories():
-    """Obtém os 200 repositórios mais populares no GitHub."""
+def fetch_repositories(total_repos=200, batch_size=20):
+    """Obtém os repositórios mais populares no GitHub."""
     all_repos = []
     cursor = None
-    total_repos = 200
-    batch_size = 20
     num_batches = total_repos // batch_size
     
     for batch in range(num_batches):
@@ -56,12 +54,7 @@ def fetch_repositories():
                   owner {{ login }}
                   stargazerCount
                   primaryLanguage {{ name }}
-                  pullRequests(states: [MERGED, CLOSED], first: 100) {{
-                    totalCount
-                    nodes {{
-                      reviews {{ totalCount }}
-                    }}
-                  }}
+                  url
                 }}
               }}
             }}
@@ -74,7 +67,7 @@ def fetch_repositories():
         """
         
         data = make_github_request(query)
-        if data and "data" in data:
+        if data and "data" in data and data["data"].get("search"):
             repositories = data['data']['search']['edges']
             
             if not repositories:
@@ -90,21 +83,76 @@ def fetch_repositories():
 
     return all_repos
 
+def fetch_pull_requests(repository, max_pages=3):
+    """Obtém os pull requests revisados de um repositório."""
+    repo_name = repository['node']['name']
+    owner = repository['node']['owner']['login']
+    cursor = None
+    reviewed_prs = []
+    page_count = 0
+
+    while page_count < max_pages:
+        print(f"🔍 Buscando PRs revisados para {owner}/{repo_name} (Página {page_count + 1})")
+
+        query = f"""
+        {{
+          repository(owner: "{owner}", name: "{repo_name}") {{
+            pullRequests(states: [MERGED, CLOSED], first: 100, after: {json.dumps(cursor) if cursor else "null"}) {{
+              totalCount
+              nodes {{
+                number
+                title
+                reviews(first: 1) {{
+                  totalCount
+                }}
+              }}
+              pageInfo {{
+                hasNextPage
+                endCursor
+              }}
+            }}
+          }}
+        }}
+        """
+
+        data = make_github_request(query)
+
+        if data and "data" in data and data["data"].get("repository") and data["data"]["repository"].get("pullRequests"):
+            prs = data['data']['repository']['pullRequests']['nodes']
+
+            # Filtrar apenas PRs que possuem pelo menos 1 revisão
+            reviewed_prs.extend([pr for pr in prs if pr['reviews']['totalCount'] > 0])
+
+            page_info = data['data']['repository']['pullRequests']['pageInfo']
+            cursor = page_info["endCursor"] if page_info["hasNextPage"] else None
+
+            if not cursor:
+                break
+        else:
+            print(f"⚠️ Erro ao buscar PRs para {owner}/{repo_name}.")
+            break
+
+        page_count += 1
+
+    return len(reviewed_prs)
+
+
 def process_data(repositories):
     """Filtra PRs com pelo menos uma revisão e estrutura os dados em um DataFrame."""
     repo_list = []
     
     for repo in repositories:
-        node = repo['node']
-        pull_requests = [pr for pr in node['pullRequests']['nodes'] if pr['reviews']['totalCount'] > 0]
+        reviewed_pr_count = fetch_pull_requests(repo)
+        print(f"📌 {repo['node']['name']} - PRs Revisados: {reviewed_pr_count}")  # Debug
         
-        if len(pull_requests) >= 100:
-            repo_list.append({
-                "Nome": node['name'],
-                "Proprietário": node['owner']['login'],
-                "Estrelas": node['stargazerCount'],
-                "Linguagem Principal": node['primaryLanguage']['name'] if node['primaryLanguage'] else "Desconhecido",
-                "Total PRs Revisados": len(pull_requests)
-            })
+        node = repo['node']
+        repo_list.append({
+            "Nome": node['name'],
+            "Proprietário": node['owner']['login'],
+            "Estrelas": node['stargazerCount'],
+            "Linguagem Principal": node['primaryLanguage']['name'] if node['primaryLanguage'] else "Desconhecido",
+            "Total PRs Revisados": reviewed_pr_count,
+            "URL": node['url']
+        })
     
     return pd.DataFrame(repo_list)
