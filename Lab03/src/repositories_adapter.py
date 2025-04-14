@@ -39,7 +39,7 @@ def make_github_request(query, max_retries=5):
             break
     return None
 
-def fetch_repositories(total_repos=2, batch_size=1):
+def fetch_repositories(total_repos=200, batch_size=1):
     all_repos = []
     cursor = None
     num_batches = total_repos // batch_size
@@ -218,8 +218,31 @@ def collect_repository_metrics(repository, max_prs=100):
 
     return all_metrics
 
+def analyze_correlations(df):
+    metrics = [
+        "analysis_time_hours", "total_files", "total_additions",
+        "total_deletions", "description_length", "total_comments",
+        "total_participants", "total_reviews"
+    ]
+    corr_matrix = pd.DataFrame(index=metrics, columns=metrics)
+    for i in range(len(metrics)):
+        for j in range(len(metrics)):
+            m1, m2 = metrics[i], metrics[j]
+            corr, _ = spearmanr(df[m1], df[m2])
+            corr_matrix.loc[m1, m2] = round(corr, 2)
+    corr_matrix = corr_matrix.astype(float)
+    return corr_matrix
+
+def exibir_grafico_correlacao(corr_matrix):
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
+    plt.title("Matriz de Correlação (Spearman) entre Métricas dos Pull Requests")
+    plt.tight_layout()
+    plt.show()
+
 def process_data(repositories):
     repo_list = []
+    all_pr_metrics = []
     for repo in repositories:
         repo_name = repo['node']['name']
         owner = repo['node']['owner']['login']
@@ -236,7 +259,7 @@ def process_data(repositories):
 
         if pr_metrics:
             df_metrics = pd.DataFrame(pr_metrics)
-            analyze_correlations(df_metrics)
+            all_pr_metrics.append(df_metrics)
             avg_metrics = {
                 "avg_analysis_time": df_metrics['analysis_time_hours'].mean(),
                 "avg_files": df_metrics['total_files'].mean(),
@@ -269,24 +292,9 @@ def process_data(repositories):
         }
         repo_list.append(repo_data)
 
-    return pd.DataFrame(repo_list)
+    if all_pr_metrics:
+        combined_df = pd.concat(all_pr_metrics, ignore_index=True)
+        corr_matrix = analyze_correlations(combined_df)
+        exibir_grafico_correlacao(corr_matrix)
 
-def analyze_correlations(df):
-    metrics = [
-        "analysis_time_hours", "total_files", "total_additions",
-        "total_deletions", "description_length", "total_comments",
-        "total_participants", "total_reviews"
-    ]
-    corr_matrix = pd.DataFrame(index=metrics, columns=metrics)
-    for i in range(len(metrics)):
-        for j in range(len(metrics)):
-            m1, m2 = metrics[i], metrics[j]
-            corr, _ = spearmanr(df[m1], df[m2])
-            corr_matrix.loc[m1, m2] = round(corr, 2)
-    corr_matrix = corr_matrix.astype(float)
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
-    plt.title("Matriz de Correlação (Spearman) entre Métricas dos Pull Requests")
-    plt.tight_layout()
-    plt.show()
-    return corr_matrix
+    return pd.DataFrame(repo_list)
