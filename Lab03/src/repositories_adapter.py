@@ -184,7 +184,10 @@ def calculate_pr_metrics(pr_data):
     total_deletions = sum(file['deletions'] for file in pr_data['files']['nodes'])
     total_comments = pr_data['comments']['totalCount']
     total_participants = pr_data['participants']['totalCount']
+    total_reviews = pr_data['reviews']['totalCount']
     description_length = len(pr_data['bodyText']) if pr_data['bodyText'] else 0
+
+    feedback_score = total_comments + total_participants + total_reviews
 
     return {
         "pr_number": pr_data['number'],
@@ -196,27 +199,34 @@ def calculate_pr_metrics(pr_data):
         "description_length": description_length,
         "total_comments": total_comments,
         "total_participants": total_participants,
-        "total_reviews": pr_data['reviews']['totalCount']
+        "total_reviews": total_reviews,
+        "feedback_score": feedback_score   # <-- Agora tem o feedback_score aqui!
     }
+
 
 def collect_repository_metrics(repository, max_prs=100):
     repo_name = repository['node']['name']
     owner = repository['node']['owner']['login']
     all_metrics = []
     print(f"\n📊 Coletando métricas para {owner}/{repo_name}...")
+
     reviewed_prs = fetch_pull_requests(repository)
 
     for pr in reviewed_prs[:max_prs]:
         pr_details = fetch_pr_details(owner, repo_name, pr['number'])
-        metrics = calculate_pr_metrics(pr_details)
-        if metrics:
-            metrics.update({
-                "repo_owner": owner,
-                "repo_name": repo_name
-            })
-            all_metrics.append(metrics)
+        
+        # Garantir que os dados da PR sejam válidos antes de calcular as métricas
+        if pr_details:
+            metrics = calculate_pr_metrics(pr_details)
+            if metrics:
+                metrics.update({
+                    "repo_owner": owner,
+                    "repo_name": repo_name
+                })
+                all_metrics.append(metrics)
 
     return all_metrics
+
 
 def analyze_correlations(df):
     metrics = [
@@ -239,6 +249,109 @@ def exibir_grafico_correlacao(corr_matrix):
     plt.title("Matriz de Correlação (Spearman) entre Métricas dos Pull Requests")
     plt.tight_layout()
     plt.show()
+
+def exibir_grafico_distribuicao(serie, nome_campo, tipo='histograma'):
+    """
+    Gera gráficos de distribuição para as métricas de cada RQ.
+    """
+    plt.figure(figsize=(10, 6))
+    
+    if tipo == 'histograma':
+        sns.histplot(serie, kde=True, bins=20, color='blue')
+        plt.title(f"Distribuição de {nome_campo}")
+        plt.xlabel(nome_campo)
+        plt.ylabel("Frequência")
+    elif tipo == 'boxplot':
+        sns.boxplot(x=serie, color='green')
+        plt.title(f"Boxplot de {nome_campo}")
+        plt.xlabel(nome_campo)
+    
+    plt.tight_layout()
+    plt.show()
+
+def gerar_graficos_metrics(df):
+    """
+    Gera gráficos para os RQs especificados: Tamanho, Tempo, Descrição, Interações, Revisões.
+    """
+
+    # A) Feedback Final das Revisões (Status do PR)
+    print("\n📊 Gráficos - Feedback Final das Revisões")
+    
+    # RQ 01: Relação entre o tamanho dos PRs e o feedback final das revisões (PR estado: MERGED ou CLOSED)
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='state', y='total_additions', data=df)
+    plt.title("RQ 01: Relação entre o tamanho dos PRs e o feedback final das revisões")
+    plt.xlabel("Status do PR")
+    plt.ylabel("Tamanho dos PRs (Adições)")
+    plt.tight_layout()
+    plt.show()
+
+    # RQ 02: Relação entre o tempo de análise dos PRs e o feedback final das revisões
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='state', y='analysis_time_hours', data=df)
+    plt.title("RQ 02: Relação entre o tempo de análise dos PRs e o feedback final das revisões")
+    plt.xlabel("Status do PR")
+    plt.ylabel("Tempo de Análise (horas)")
+    plt.tight_layout()
+    plt.show()
+
+    # RQ 03: Relação entre a descrição dos PRs e o feedback final das revisões
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='state', y='description_length', data=df)
+    plt.title("RQ 03: Relação entre a descrição dos PRs e o feedback final das revisões")
+    plt.xlabel("Status do PR")
+    plt.ylabel("Tamanho da Descrição")
+    plt.tight_layout()
+    plt.show()
+
+    # RQ 04: Relação entre as interações nos PRs e o feedback final das revisões
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='state', y='total_comments', data=df)
+    plt.title("RQ 04: Relação entre as interações nos PRs e o feedback final das revisões")
+    plt.xlabel("Status do PR")
+    plt.ylabel("Número de Comentários")
+    plt.tight_layout()
+    plt.show()
+
+    # B) Número de Revisões
+    print("\n📊 Gráficos - Número de Revisões")
+
+    # RQ 05: Relação entre o tamanho dos PRs e o número de revisões realizadas
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='total_additions', y='total_reviews', data=df)
+    plt.title("RQ 05: Relação entre o tamanho dos PRs e o número de revisões realizadas")
+    plt.xlabel("Tamanho dos PRs (Adições)")
+    plt.ylabel("Número de Revisões")
+    plt.tight_layout()
+    plt.show()
+
+    # RQ 06: Relação entre o tempo de análise dos PRs e o número de revisões realizadas
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='analysis_time_hours', y='total_reviews', data=df)
+    plt.title("RQ 06: Relação entre o tempo de análise dos PRs e o número de revisões realizadas")
+    plt.xlabel("Tempo de Análise (horas)")
+    plt.ylabel("Número de Revisões")
+    plt.tight_layout()
+    plt.show()
+
+    # RQ 07: Relação entre a descrição dos PRs e o número de revisões realizadas
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='description_length', y='total_reviews', data=df)
+    plt.title("RQ 07: Relação entre a descrição dos PRs e o número de revisões realizadas")
+    plt.xlabel("Tamanho da Descrição")
+    plt.ylabel("Número de Revisões")
+    plt.tight_layout()
+    plt.show()
+
+    # RQ 08: Relação entre as interações nos PRs e o número de revisões realizadas
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x='total_comments', y='total_reviews', data=df)
+    plt.title("RQ 08: Relação entre as interações nos PRs e o número de revisões realizadas")
+    plt.xlabel("Número de Comentários")
+    plt.ylabel("Número de Revisões")
+    plt.tight_layout()
+    plt.show()
+ 
 
 def process_data(repositories):
     repo_list = []
@@ -296,5 +409,6 @@ def process_data(repositories):
         combined_df = pd.concat(all_pr_metrics, ignore_index=True)
         corr_matrix = analyze_correlations(combined_df)
         exibir_grafico_correlacao(corr_matrix)
+        gerar_graficos_metrics(combined_df)  # Gerar os gráficos das métricas
 
     return pd.DataFrame(repo_list)
