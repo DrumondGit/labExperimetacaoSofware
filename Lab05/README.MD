@@ -7,7 +7,6 @@ Este projeto tem como objetivo comparar, de forma controlada, o desempenho de AP
 
 ## Estrutura do Projeto
 
-.
 ├── backend/
 │ ├── rest/ # Código da API REST
 │ └── graphql/ # Código da API GraphQL
