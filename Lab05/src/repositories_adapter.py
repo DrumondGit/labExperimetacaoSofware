@@ -6,6 +6,9 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 
+# Configurações
+REST_URL_USERS = "http://localhost:5000/users"
+
 load_dotenv()
 token = os.getenv("GITHUB_TOKEN")
 
@@ -106,3 +109,55 @@ def processData(repositories):
         })
 
     return pd.DataFrame(repoList)
+
+
+# Número de repetições
+REPETICOES = 30
+
+# Função de teste REST
+def testar_rest(url):
+    tempos = []
+    tamanhos = []
+    for i in range(REPETICOES):
+        inicio = time.perf_counter()
+        resposta = requests.get(url)
+        fim = time.perf_counter()
+        tempo = (fim - inicio) * 1000  # ms
+        tamanho = len(resposta.content)
+        tempos.append(tempo)
+        tamanhos.append(tamanho)
+    return tempos, tamanhos
+
+# Função de teste GraphQL
+def testar_graphql(url, query):
+    transport = RequestsHTTPTransport(url=url, verify=False)
+    client = Client(transport=transport, fetch_schema_from_transport=False)
+    
+    tempos = []
+    tamanhos = []
+    for i in range(REPETICOES):
+        inicio = time.perf_counter()
+        resposta = client.execute(gql(query))
+        fim = time.perf_counter()
+        tempo = (fim - inicio) * 1000  # ms
+        tamanho = len(str(resposta).encode('utf-8'))
+        tempos.append(tempo)
+        tamanhos.append(tamanho)
+    return tempos, tamanhos
+
+# Coleta REST
+rest_tempos, rest_tamanhos = testar_rest(REST_URL_USERS)
+
+# Coleta GraphQL
+graphql_tempos, graphql_tamanhos = testar_graphql(GRAPHQL_URL, query_users)
+
+# Salva no CSV
+with open("resultados.csv", "w", newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(["API", "Tempo_ms", "Tamanho_bytes"])
+    for tempo, tamanho in zip(rest_tempos, rest_tamanhos):
+        writer.writerow(["REST", tempo, tamanho])
+    for tempo, tamanho in zip(graphql_tempos, graphql_tamanhos):
+        writer.writerow(["GraphQL", tempo, tamanho])
+
+print("Coleta finalizada e salva em resultados.csv")
